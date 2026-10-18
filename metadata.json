@@ -1,0 +1,9 @@
+{
+  "name": "Hand-Tracking Sign Language Recognizer",
+  "description": "Real-time hand tracking and sign language recognition with live webcam detection and speech synthesis.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": []
+}
