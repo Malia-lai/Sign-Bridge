@@ -271,14 +271,14 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
           {/* Logo & Brand */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/10">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-400 p-0.5 shadow-lg shadow-emerald-500/30 ring-1 ring-emerald-400/40">
               <div className="w-full h-full bg-zinc-950 rounded-[10px] flex items-center justify-center text-emerald-400">
                 <Hand className="w-5 h-5" />
               </div>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-extrabold text-white text-base tracking-tight">
+                <h1 className="font-extrabold text-white text-lg tracking-tight bg-gradient-to-r from-white to-zinc-300 bg-clip-text text-transparent">
                   Sign Language AI Studio
                 </h1>
                 <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">
@@ -307,7 +307,7 @@ export default function App() {
           </div>
 
           {/* Tab Switcher */}
-          <nav className="flex items-center gap-1 bg-zinc-950/90 p-1.5 rounded-2xl border border-zinc-800/80 shadow-inner">
+          <nav className="flex items-center gap-1 bg-zinc-950/90 p-1.5 rounded-2xl border border-zinc-800/80 shadow-inner overflow-x-auto max-w-full">
             <button
               onClick={() => setActiveTab('audit')}
               className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
@@ -382,7 +382,7 @@ export default function App() {
       {/* Main Content Layout */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Webcam & Hands Detection (7 cols) */}
-        <section className="lg:col-span-7 flex flex-col gap-4">
+        <section className="lg:col-span-8 flex flex-col gap-4">
           <CameraView
             onFrameFeatures={handleFrameFeatures}
             onGestureDetected={handleGestureDetected}
@@ -465,7 +465,7 @@ export default function App() {
             </div>
 
             {/* Sentence Words Flow */}
-            <div className="min-h-14 flex flex-wrap items-center gap-2 bg-zinc-950/80 border border-zinc-800/80 p-3.5 rounded-xl">
+            <div className="min-h-16 flex flex-wrap items-center gap-2.5 bg-gradient-to-br from-zinc-950/80 to-zinc-900/60 border border-zinc-800/80 p-4 rounded-2xl shadow-inner">
               {historyWords.length === 0 ? (
                 <span className="text-xs text-zinc-500 italic">
                   Les signes reconnus (webcam ou simulateur) formeront une phrase ici et seront prononcés à voix haute...
@@ -474,7 +474,7 @@ export default function App() {
                 historyWords.map((word, idx) => (
                   <span
                     key={idx}
-                    className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 text-emerald-300 font-bold text-sm shadow-sm flex items-center gap-1.5 animate-fade-in"
+                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500/15 to-teal-500/15 border border-emerald-500/40 text-emerald-200 font-bold text-sm shadow-sm flex items-center gap-1.5 animate-fade-in hover:scale-105 transition-transform"
                   >
                     <span>{word}</span>
                   </span>
@@ -516,7 +516,7 @@ export default function App() {
         </section>
 
         {/* Right Column: Dynamic Tabs (5 cols) */}
-        <section className="lg:col-span-5 h-full">
+        <section className="lg:col-span-4 h-full">
           {/* TAB 1: LIVE RECOGNITION SUMMARY */}
           {activeTab === 'live' && (
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">

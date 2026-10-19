@@ -523,7 +523,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
   return (
     <div
       ref={containerRef}
-      className="relative flex flex-col items-center bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl transition-all"
+      className="relative flex flex-col items-center bg-zinc-900/80 border border-zinc-800/80 rounded-3xl overflow-hidden shadow-2xl backdrop-blur transition-all"
     >
       {/* EXCLUSIVE HARDWARE WARNING BANNER (When webcam is reserved on AI Studio) */}
       {isWebcamRunning && (
@@ -800,7 +800,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
       )}
 
       {/* Camera / Simulation Viewport */}
-      <div className="relative w-full aspect-4/3 max-w-3xl bg-black flex items-center justify-center overflow-hidden">
+      <div className="relative w-full aspect-video max-w-5xl bg-black/90 flex items-center justify-center overflow-hidden ring-1 ring-zinc-800/60">
         {/* Real video tag (used in webcam mode) */}
         <video
           ref={videoRef}
