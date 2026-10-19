@@ -14,8 +14,6 @@ export function getSimulatedHand(
   const wobbleX = Math.sin(time * 2) * 0.005;
   const wobbleY = Math.cos(time * 2.5) * 0.005;
 
-  const wrist: Landmark = { x: xCenter + wobbleX, y: yCenter + wobbleY, z: 0 };
-
   // Base finger templates
   // Finger definition: [mcpX, mcpY, pipOffset, dipOffset, tipOffset]
   const createHandLandmarks = (fingerStates: {
@@ -27,6 +25,7 @@ export function getSimulatedHand(
     tiltAngle?: number; // radians
   }): Landmark[] => {
     const lms: Landmark[] = new Array(21);
+    const wrist: Landmark = { x: xCenter + wobbleX, y: yCenter + wobbleY, z: 0 };
     lms[0] = wrist;
 
     const angle = fingerStates.tiltAngle || 0;
@@ -236,7 +235,8 @@ export function getSimulatedHand(
   }
 
   if (g === 'shawarma' || g === 'tacos') {
-    // Two hands
+    // Two hands; spacing distinguishes shawarma (close) from tacos (farther)
+    const spacing = g === 'shawarma' ? 0.12 : 0.30;
     const hand1 = createHandLandmarks({
       thumb: { extended: true },
       index: { extended: true },
@@ -255,7 +255,7 @@ export function getSimulatedHand(
     });
     // Shift hand 2 to left
     hand2.forEach((p) => {
-      p.x -= 0.18;
+      p.x -= spacing;
     });
 
     return [

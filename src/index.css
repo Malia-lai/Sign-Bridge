@@ -1,8 +1,103 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --color-bg: #09090b;
+    --color-panel: #18181b;
+    --color-card: #27272a;
+    --color-border: #3f3f46;
+    --color-accent: #10b981;
+    --color-accent-soft: rgba(16, 185, 129, 0.12);
+    --color-text: #fafafa;
+    --color-muted: #a1a1aa;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     margin: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    min-height: 100vh;
+    font-family:
+      'Inter', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+      Oxygen, Ubuntu, Cantarell, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    letter-spacing: -0.01em;
+  }
+
+  /* Focus ring for keyboard users */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-card);
+    border-radius: 999px;
+    border: 2px solid var(--color-bg);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border);
+  }
+
+  /* Smooth selection */
+  ::selection {
+    background: rgba(16, 185, 129, 0.35);
+    color: #fff;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-zinc-900/70 border border-zinc-800/80 rounded-2xl shadow-lg backdrop-blur-sm;
+  }
+  .card-hover {
+    @apply transition-all duration-200 hover:border-zinc-700 hover:shadow-xl hover:-translate-y-0.5;
+  }
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-md active:scale-95 transition-all;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-medium border border-zinc-700/60 transition-all;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border;
+  }
+  .section-title {
+    @apply text-lg font-bold text-white tracking-tight flex items-center gap-2;
+  }
+  .muted {
+    @apply text-zinc-400 text-xs;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.25s ease-out;
+  }
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }

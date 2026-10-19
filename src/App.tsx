@@ -268,7 +268,7 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-black">
       {/* Top Navigation Bar */}
       <header className="border-b border-zinc-800/80 bg-zinc-900/60 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
           {/* Logo & Brand */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/10">
@@ -307,10 +307,10 @@ export default function App() {
           </div>
 
           {/* Tab Switcher */}
-          <nav className="flex items-center gap-1 bg-zinc-950/80 p-1 rounded-xl border border-zinc-800">
+          <nav className="flex items-center gap-1 bg-zinc-950/90 p-1.5 rounded-2xl border border-zinc-800/80 shadow-inner">
             <button
               onClick={() => setActiveTab('audit')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
                 activeTab === 'audit'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-zinc-400 hover:text-zinc-200'
@@ -322,7 +322,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setActiveTab('live')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
                 activeTab === 'live'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-zinc-400 hover:text-zinc-200'
@@ -333,7 +333,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setActiveTab('dictionary')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
                 activeTab === 'dictionary'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-zinc-400 hover:text-zinc-200'
@@ -344,7 +344,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setActiveTab('collect')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
                 activeTab === 'collect'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-zinc-400 hover:text-zinc-200'
@@ -355,7 +355,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setActiveTab('dataset')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
                 activeTab === 'dataset'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-zinc-400 hover:text-zinc-200'
@@ -366,7 +366,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setActiveTab('python')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${
                 activeTab === 'python'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-zinc-400 hover:text-zinc-200'
@@ -380,7 +380,7 @@ export default function App() {
       </header>
 
       {/* Main Content Layout */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Webcam & Hands Detection (7 cols) */}
         <section className="lg:col-span-7 flex flex-col gap-4">
           <CameraView

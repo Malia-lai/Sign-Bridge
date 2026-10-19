@@ -242,9 +242,21 @@ def classify_geometry(hands_lms_list):
     if pinch_all < 1.8 and (not index_ext or not middle_ext):
         return 'eat', 0.93
 
+    # 0. Gestes à deux mains : Shawarma ou tacos (prioritaires si 2 mains proches)
+    if len(hands_lms_list) >= 2:
+        w1 = hands_lms_list[0][0]
+        w2 = hands_lms_list[1][0]
+        h_dist = dist_3d(w1, w2)
+        if h_dist < 3.5 * palm_size:
+            if h_dist < 2.0 * palm_size:
+                return 'Shawarma', 0.91
+            return 'tacos', 0.89
+
     # 5. "hello" (Main ouverte, tous les doigts tendus vers le haut)
     if index_ext and middle_ext and ring_ext and pinky_ext:
-        if wrist[1] > primary[9][1] - 0.05:
+        dx = abs(primary[9][0] - wrist[0])
+        dy = abs(primary[9][1] - wrist[1])
+        if wrist[1] > primary[9][1] - 0.05 and dx <= dy:
             return 'hello', 0.98
 
     # 6. "sleep" (Main inclinée sur le côté à plat)
@@ -260,16 +272,6 @@ def classify_geometry(hands_lms_list):
             return 'hate', 0.92
         elif thumb_ext:
             return 'not', 0.91
-
-    # 8. Gestes à deux mains : Shawarma ou tacos
-    if len(hands_lms_list) >= 2:
-        w1 = hands_lms_list[0][0]
-        w2 = hands_lms_list[1][0]
-        h_dist = dist_3d(w1, w2)
-        if h_dist < 2.0 * palm_size:
-            return 'Shawarma', 0.91
-        elif h_dist < 3.5 * palm_size:
-            return 'tacos', 0.89
 
     return None, 0.0
 
