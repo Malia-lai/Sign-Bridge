@@ -1,0 +1,12 @@
+{
+  "hello": {"category": "greeting", "intent": "greeting"},
+  "hi": {"category": "greeting", "intent": "greeting"},
+  "help": {"category": "emergency", "intent": "emergency", "tags": ["emergency"]},
+  "pain": {"category": "emergency", "intent": "emergency", "tags": ["emergency"]},
+  "water": {"category": "noun", "intent": "statement"},
+  "want": {"category": "verb", "intent": "request"},
+  "need": {"category": "verb", "intent": "request"},
+  "me": {"category": "pronoun", "intent": "statement"},
+  "you": {"category": "pronoun", "intent": "statement"},
+  "name": {"category": "noun", "intent": "question"}
+}

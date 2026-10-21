@@ -28,3 +28,15 @@ Words: ["you", "name", "what"]
 
 Words: ["help", "me", "pain"]
 {"sentence": "Help me, I am in pain.", "intent": "emergency", "alternatives": []}
+
+Faithfulness rules:
+- Keep the meaning of every known word the user signed, including time and
+  urgency words such as "now". Never drop a word's meaning.
+- Never add information, objects, or details that were not signed. Do not
+  add words like "something" or "please" unless they were signed.
+- Never output placeholders, ellipses, or incomplete sentences. If the words
+  cannot form a sentence, return the shortest valid sentence using only the
+  signed words.
+- Words flagged as unknown must be ignored in the sentence. Never translate,
+  explain, or reinterpret them.
+- If every word is unknown, return an empty sentence.
