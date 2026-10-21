@@ -115,7 +115,7 @@ function reconstructFluentSentence(words: string[]): { french: string; english: 
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'live' | 'dictionary' | 'collect' | 'dataset' | 'python' | 'audit'>('audit');
+  const [activeTab, setActiveTab] = useState<'live' | 'dictionary' | 'collect' | 'dataset' | 'python' | 'audit'>('live');
   const [gestures, setGestures] = useState<GestureStat[]>(() => {
     const saved = localStorage.getItem('sign_gestures');
     return saved ? JSON.parse(saved) : DEFAULT_GESTURES;
@@ -265,7 +265,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-black">
+    <div className="signbridge-app min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-black">
       {/* Top Navigation Bar */}
       <header className="border-b border-zinc-800/80 bg-zinc-900/60 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
@@ -279,14 +279,14 @@ export default function App() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-extrabold text-white text-lg tracking-tight bg-gradient-to-r from-white to-zinc-300 bg-clip-text text-transparent">
-                  Sign Language AI Studio
+                  SignBridge
                 </h1>
                 <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">
-                  Pro Edition
+                  LIVE SIGNING STUDIO
                 </span>
               </div>
               <p className="text-[11px] text-zinc-400 hidden sm:block">
-                Traduction de la langue des signes • MediaPipe 3D & Réseau LSTM
+                Your hands, your words, your voice.
               </p>
             </div>
           </div>
@@ -317,7 +317,7 @@ export default function App() {
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Audit & Code</span>
+              <span>Vue d’ensemble</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             </button>
             <button
@@ -340,7 +340,7 @@ export default function App() {
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
-              Dictionnaire (10)
+              Dictionnaire
             </button>
             <button
               onClick={() => setActiveTab('collect')}
@@ -373,14 +373,14 @@ export default function App() {
               }`}
             >
               <Terminal className="w-3.5 h-3.5" />
-              Python (Windows)
+              Guide local
             </button>
           </nav>
         </div>
       </header>
 
       {/* Main Content Layout */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <main className="signbridge-main flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Webcam & Hands Detection (7 cols) */}
         <section className="lg:col-span-8 flex flex-col gap-4">
           <CameraView

@@ -268,7 +268,12 @@ export const CameraView: React.FC<CameraViewProps> = ({
         if (onGestureDetected) {
           onGestureDetected(pred.label, pred.confidence);
         }
-        speakWord(pred.label);
+        // Only announce a gesture once per change to avoid repeating
+        // "hello" endlessly while the simulator keeps producing it.
+        if (pred.label !== lastSpokenRef.current) {
+          lastSpokenRef.current = pred.label;
+          speakWord(pred.label);
+        }
       } else {
         setDetectedSign('');
         setDetectedConfidence(0);
@@ -277,6 +282,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
       setFingerStates(null);
       setDetectedSign('');
       setDetectedConfidence(0);
+      lastSpokenRef.current = '';
     }
   }, [onFrameFeatures, onGestureDetected, speakWord, confidenceThreshold]);
 
@@ -800,7 +806,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
       )}
 
       {/* Camera / Simulation Viewport */}
-      <div className="relative w-full aspect-video max-w-5xl bg-black/90 flex items-center justify-center overflow-hidden ring-1 ring-zinc-800/60">
+      <div className="relative w-full aspect-video bg-black/90 flex items-center justify-center overflow-hidden ring-1 ring-zinc-800/60">
         {/* Real video tag (used in webcam mode) */}
         <video
           ref={videoRef}
