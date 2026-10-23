@@ -131,6 +131,29 @@ export function classifyHandGesture(
   ) / palmSize;
 
   // =========================================================================
+  // 0. Two-hand gestures: Shawarma or tacos (prioritized when 2 hands are close)
+  // =========================================================================
+  if (hands.length >= 2) {
+    const w1 = hands[0].landmarks[0];
+    const w2 = hands[1].landmarks[0];
+    const handsDist = dist(w1, w2);
+    if (handsDist < 3.5 * palmSize) {
+      if (handsDist < 2.0 * palmSize) {
+        return {
+          label: 'Shawarma',
+          confidence: 0.91,
+          details: 'Deux mains jointes en rouleau (Shawarma)'
+        };
+      }
+      return {
+        label: 'tacos',
+        confidence: 0.89,
+        details: 'Deux mains courbées face à face (Tacos)'
+      };
+    }
+  }
+
+  // =========================================================================
   // 1. "peace" (Signe V / Victoire / Paix ✌️)
   // Index et Majeur levés, Annulaire et Auriculaire repliés
   // =========================================================================
@@ -183,8 +206,10 @@ export function classifyHandGesture(
   // Les 4 doigts principaux tendus vers le haut
   // =========================================================================
   if (index && middle && ring && pinky) {
-    // Main orientée vers le haut (poignet en bas, doigts en haut)
-    if (wrist.y > lm[9].y - 0.05) {
+    // Main orientée vers le haut (poignet en bas, doigts en haut), non inclinée sur le côté
+    const dx = Math.abs(lm[9].x - wrist.x);
+    const dy = Math.abs(lm[9].y - wrist.y);
+    if (wrist.y > lm[9].y - 0.05 && dx <= dy) {
       return {
         label: 'hello',
         confidence: 0.98,
@@ -226,29 +251,6 @@ export function classifyHandGesture(
         label: 'not',
         confidence: 0.91,
         details: 'Pouce vers l\'extérieur / levé (Non / Not)'
-      };
-    }
-  }
-
-  // =========================================================================
-  // 8. Gestes à deux mains : Shawarma ou tacos
-  // =========================================================================
-  if (hands.length >= 2) {
-    const w1 = hands[0].landmarks[0];
-    const w2 = hands[1].landmarks[0];
-    const handsDist = dist(w1, w2);
-
-    if (handsDist < 2.0 * palmSize) {
-      return {
-        label: 'Shawarma',
-        confidence: 0.91,
-        details: 'Deux mains jointes en rouleau (Shawarma)'
-      };
-    } else if (handsDist < 3.5 * palmSize) {
-      return {
-        label: 'tacos',
-        confidence: 0.89,
-        details: 'Deux mains courbées face à face (Tacos)'
       };
     }
   }

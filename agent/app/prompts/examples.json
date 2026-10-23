@@ -1,0 +1,10 @@
+[
+  {"words": ["me", "water", "want"], "sentence": "I want some water.", "intent": "request", "alternatives": ["I would like water, please."]},
+  {"words": ["you", "name", "what"], "sentence": "What is your name?", "intent": "question", "alternatives": []},
+  {"words": ["help", "me", "pain"], "sentence": "Help me, I am in pain.", "intent": "emergency", "alternatives": []},
+  {"words": ["hello"], "sentence": "Hello.", "intent": "greeting", "alternatives": []},
+  {"words": ["me", "need", "help"], "sentence": "I need help.", "intent": "request", "alternatives": ["Please help me."]},
+  {"words": ["you", "ok"], "sentence": "Are you okay?", "intent": "question", "alternatives": []},
+  {"words": ["me", "pain", "help"], "sentence": "I am in pain, please help me.", "intent": "emergency", "alternatives": []},
+  {"words": ["me", "water", "need"], "sentence": "I need water.", "intent": "request", "alternatives": ["I need some water."]}
+]

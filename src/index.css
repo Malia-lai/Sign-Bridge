@@ -1,8 +1,159 @@
 @import "tailwindcss";
 
-@layer base {
-  body {
-    margin: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  }
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #edf7f5;
+  background: #080e1b;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  --ink: #edf7f5;
+  --muted: #91a7ae;
+  --panel: #111b2b;
+  --panel-raised: #172538;
+  --line: #26374a;
+  --aqua: #71f0d2;
+  --blue: #8194ff;
+}
+
+* { box-sizing: border-box; }
+html { min-width: 320px; min-height: 100%; scroll-behavior: smooth; background: #080e1b; }
+body { margin: 0; min-width: 320px; min-height: 100vh; color: var(--ink); background: #080e1b; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid #ffc857 !important; outline-offset: 3px; }
+::selection { background: #71f0d2; color: #071b1a; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #0b1422; }
+::-webkit-scrollbar-thumb { background: #34485a; border: 2px solid #0b1422; border-radius: 99px; }
+
+.signbridge-app {
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 54% -25%, rgba(73, 103, 180, .2), transparent 48%), #080e1b !important;
+  color: var(--ink) !important;
+}
+.signbridge-app > header {
+  position: sticky; top: 0; z-index: 50;
+  border-color: rgba(122, 157, 177, .18) !important;
+  background: rgba(10, 17, 31, .9) !important;
+  box-shadow: 0 8px 36px rgba(0, 0, 0, .22);
+  backdrop-filter: blur(20px);
+}
+.signbridge-app > header > div {
+  width: 100%; max-width: none; min-height: 92px;
+  padding: 14px clamp(18px, 3vw, 52px);
+  margin: 0; gap: 18px; flex-wrap: wrap;
+}
+.signbridge-app > header h1 {
+  color: #f4fbfa !important; background: none !important; -webkit-text-fill-color: #f4fbfa;
+  font-size: 22px; letter-spacing: -.055em;
+}
+.signbridge-app > header p { color: #93a7b1 !important; font-size: 12px; }
+.signbridge-app > header .bg-gradient-to-tr {
+  background: linear-gradient(140deg, #66e6c5, #8093ff 90%) !important;
+  box-shadow: 0 8px 26px rgba(104, 217, 202, .2) !important; border-radius: 16px;
+}
+.signbridge-app > header .bg-gradient-to-tr > div { background: #101a2b !important; color: #8df6dd !important; }
+.signbridge-app > header .uppercase.tracking-wider {
+  background: rgba(115, 240, 210, .09) !important; border-color: rgba(115, 240, 210, .2) !important;
+  color: #8cebd7 !important; font-size: 9px; letter-spacing: .12em;
+}
+.signbridge-app > header nav {
+  background: #101a2a !important; border-color: #24354a !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.03) !important; border-radius: 15px; padding: 5px;
+}
+.signbridge-app > header nav button {
+  min-height: 42px; padding-inline: 14px; border-radius: 11px; color: #91a5b0 !important; white-space: nowrap;
+}
+.signbridge-app > header nav button:hover { color: #f2faf8 !important; background: #1b2a3d; }
+.signbridge-app > header nav button.bg-emerald-600 {
+  background: linear-gradient(135deg, #159a86, #147c82) !important; color: white !important;
+  box-shadow: 0 5px 17px rgba(20, 154, 134, .24);
+}
+.signbridge-app > header nav button svg { color: currentColor !important; }
+.signbridge-app > header .bg-emerald-500\/10 { background: rgba(113, 240, 210, .09) !important; border-color: rgba(113, 240, 210, .2) !important; color: #83e7d2 !important; }
+.signbridge-app > header .bg-amber-500\/10 { background: rgba(255, 193, 92, .1) !important; border-color: rgba(255, 193, 92, .24) !important; color: #ffd27d !important; }
+
+.signbridge-main {
+  width: 100%; max-width: none; min-height: calc(100vh - 92px); margin: 0;
+  padding: clamp(18px, 2.3vw, 38px) clamp(16px, 3vw, 52px) 44px !important;
+  gap: clamp(16px, 1.8vw, 28px) !important;
+  align-content: start;
+}
+.signbridge-main > section { min-width: 0; }
+.signbridge-main > section:first-child { gap: 18px; }
+.signbridge-main > section:last-child { min-height: 100%; }
+
+.signbridge-app [class*="bg-zinc-900"], .signbridge-app [class*="bg-zinc-950"] { background-color: var(--panel) !important; }
+.signbridge-app [class*="border-zinc-800"], .signbridge-app [class*="border-zinc-700"] { border-color: var(--line) !important; }
+.signbridge-app [class*="text-white"] { color: #f3faf8 !important; }
+.signbridge-app [class*="text-zinc-100"], .signbridge-app [class*="text-zinc-200"], .signbridge-app [class*="text-zinc-300"] { color: #d0e0e1 !important; }
+.signbridge-app [class*="text-zinc-400"], .signbridge-app [class*="text-zinc-500"] { color: var(--muted) !important; }
+.signbridge-app [class*="bg-zinc-800"] { background-color: #1c2b3e !important; }
+.signbridge-app [class*="hover:bg-zinc-700"]:hover, .signbridge-app [class*="hover:bg-zinc-800"]:hover { background-color: #263a50 !important; }
+.signbridge-app [class*="rounded-2xl"], .signbridge-app [class*="rounded-3xl"] { border-radius: 20px; }
+.signbridge-app .shadow-xl, .signbridge-app .shadow-2xl { box-shadow: 0 14px 38px rgba(0, 0, 0, .2) !important; }
+.signbridge-app button.bg-emerald-600, .signbridge-app .btn-primary { background: linear-gradient(135deg, #1aa48d, #117a80) !important; color: white !important; }
+.signbridge-app button.bg-indigo-600 { background: linear-gradient(135deg, #536de0, #765bdb) !important; color: white !important; }
+.signbridge-app button.bg-indigo-600\/20 { color: #bbc8ff !important; }
+.signbridge-app input { color: var(--ink); }
+.signbridge-app a { color: #83ebd6; }
+.signbridge-app button { transition: transform .16s ease, border-color .16s ease, background-color .16s ease, box-shadow .16s ease; }
+.signbridge-app button:active { transform: translateY(1px); }
+
+/* Camera stage: keep the real time image as the visual anchor. */
+.signbridge-app .relative.flex.flex-col.items-center {
+  width: 100%; align-items: stretch; background: #101d2a !important;
+  border-color: #253d4b !important; box-shadow: 0 22px 60px rgba(0,0,0,.33) !important;
+}
+.signbridge-app .relative.flex.flex-col.items-center [class*="bg-zinc-"] { background-color: #101a29 !important; }
+.signbridge-app .relative.flex.flex-col.items-center [class*="text-zinc-"] { color: #c0d1d4 !important; }
+.signbridge-app .relative.flex.flex-col.items-center [class*="border-zinc-"] { border-color: rgba(180, 215, 214, .14) !important; }
+.signbridge-app .relative.flex.flex-col.items-center [class*="bg-zinc-800"] { background-color: #203349 !important; }
+.signbridge-app .relative.flex.flex-col.items-center button { min-height: 36px; }
+.signbridge-app .relative.flex.flex-col.items-center video { border-radius: 0; }
+.signbridge-app .relative.flex.flex-col.items-center canvas { max-width: 100%; }
+.signbridge-app .relative.flex.flex-col.items-center > .relative.w-full.aspect-video {
+  max-width: none; aspect-ratio: 1.78; background: radial-gradient(ellipse at 50% 60%, #172d39, #09131e 72%);
+  border-color: rgba(142, 206, 204, .12);
+}
+.signbridge-app .relative.flex.flex-col.items-center > .w-full.flex.items-center.justify-between.px-4.py-3 { min-height: 76px; padding-inline: 22px; }
+.signbridge-app .relative.flex.flex-col.items-center > .w-full.p-4.bg-zinc-950\/90 { padding: 16px 20px; }
+.signbridge-app .relative.flex.flex-col.items-center > .w-full.px-4.py-2\.5 { padding: 12px 20px; }
+
+/* Transcript gets a clear, high contrast reading surface. */
+.signbridge-main > section:first-child > .bg-zinc-900 {
+  border-color: #29394c !important; background: linear-gradient(145deg, #121e30, #101a29) !important;
+}
+.signbridge-main > section:first-child > .bg-zinc-900 .min-h-16 {
+  min-height: 78px; background: #0b1422 !important; border-color: #26384a !important;
+}
+.signbridge-main > section:last-child > .bg-zinc-900,
+.signbridge-main > section:last-child > .bg-zinc-900\/80 { border-color: #29394c !important; }
+
+@media (min-width: 1101px) {
+  .signbridge-main { grid-template-columns: minmax(0, 1.65fr) minmax(360px, .9fr); }
+  .signbridge-main > section:first-child, .signbridge-main > section:last-child { grid-column: auto / span 1; }
+}
+@media (max-width: 1100px) {
+  .signbridge-app > header > div { padding-inline: 22px; }
+  .signbridge-app > header nav { order: 3; width: 100%; }
+  .signbridge-app > header nav button { flex: 1; justify-content: center; }
+  .signbridge-main { padding: 24px 22px 44px !important; }
+}
+@media (max-width: 640px) {
+  .signbridge-app > header > div { padding: 12px 16px; gap: 12px; }
+  .signbridge-app > header h1 { font-size: 18px; }
+  .signbridge-app > header nav { justify-content: flex-start; overflow-x: auto; }
+  .signbridge-app > header nav button { flex: 0 0 auto; padding-inline: 12px; font-size: 12px; }
+  .signbridge-main { padding: 16px 12px 32px !important; gap: 16px !important; }
+  .signbridge-app .relative.flex.flex-col.items-center { border-radius: 17px; }
+  .signbridge-app .relative.flex.flex-col.items-center > .w-full.flex.items-center.justify-between.px-4.py-3 { align-items: flex-start; flex-direction: column; gap: 12px; padding: 14px; }
+  .signbridge-app .relative.flex.flex-col.items-center > .w-full.flex.items-center.justify-between.px-4.py-3 > div:last-child { width: 100%; flex-wrap: wrap; }
+  .signbridge-app .relative.flex.flex-col.items-center > .relative.w-full.aspect-video { aspect-ratio: 4 / 3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

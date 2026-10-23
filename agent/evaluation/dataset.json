@@ -1,0 +1,458 @@
+[
+  {
+    "id": 1,
+    "words": [
+      "me",
+      "water",
+      "want"
+    ],
+    "expected_intent": "request",
+    "expected_sentences": [
+      "I want some water.",
+      "I would like water, please."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 2,
+    "words": [
+      "you",
+      "name",
+      "what"
+    ],
+    "expected_intent": "question",
+    "expected_sentences": [
+      "What is your name?"
+    ],
+    "expect_unknown_flag": true,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 3,
+    "words": [
+      "help",
+      "me",
+      "pain"
+    ],
+    "expected_intent": "emergency",
+    "expected_sentences": [
+      "Help me, I am in pain."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 4,
+    "words": [
+      "hello"
+    ],
+    "expected_intent": "greeting",
+    "expected_sentences": [
+      "Hello."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 5,
+    "words": [
+      "me",
+      "need",
+      "help"
+    ],
+    "expected_intent": "emergency",
+    "expected_sentences": [
+      "I need help.",
+      "Please help me."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 6,
+    "words": [
+      "me",
+      "pain"
+    ],
+    "expected_intent": "emergency",
+    "expected_sentences": [
+      "I am in pain.",
+      "I have pain."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 7,
+    "words": [
+      "water"
+    ],
+    "expected_intent": "statement",
+    "expected_sentences": [
+      "Water."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 8,
+    "words": [],
+    "expected_intent": "statement",
+    "expected_sentences": [
+      ""
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Empty input rejected with empty_input fallback; no model call.",
+    "needs_review": true
+  },
+  {
+    "id": 9,
+    "words": [
+      "me",
+      "water",
+      "want"
+    ],
+    "confidences": [
+      0.2,
+      0.3,
+      0.4
+    ],
+    "expected_intent": "request",
+    "expected_sentences": [
+      "I want some water.",
+      "I would like water, please."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 10,
+    "words": [
+      "me",
+      "foo",
+      "want"
+    ],
+    "expected_intent": "request",
+    "expected_sentences": [
+      "I want."
+    ],
+    "expect_unknown_flag": true,
+    "notes": "Unknown word 'foo' dropped and flagged; sentence omits it.",
+    "needs_review": true
+  },
+  {
+    "id": 11,
+    "words": [
+      "hi"
+    ],
+    "expected_intent": "greeting",
+    "expected_sentences": [
+      "Hi.",
+      "Hello."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 12,
+    "words": [
+      "me",
+      "need",
+      "water"
+    ],
+    "expected_intent": "request",
+    "expected_sentences": [
+      "I need water.",
+      "I need some water."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 13,
+    "words": [
+      "you",
+      "ok"
+    ],
+    "expected_intent": "question",
+    "expected_sentences": [
+      "Are you okay?"
+    ],
+    "expect_unknown_flag": true,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 14,
+    "words": [
+      "help"
+    ],
+    "expected_intent": "emergency",
+    "expected_sentences": [
+      "Help!",
+      "I need help."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 15,
+    "words": [
+      "me",
+      "name"
+    ],
+    "expected_intent": "statement",
+    "expected_sentences": [
+      "My name."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 16,
+    "words": [
+      "what"
+    ],
+    "expected_intent": "question",
+    "expected_sentences": [
+      "What?"
+    ],
+    "expect_unknown_flag": true,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 17,
+    "words": [
+      "me",
+      "water",
+      "want",
+      "now"
+    ],
+    "expected_intent": "request",
+    "expected_sentences": [
+      "I want water now.",
+      "I want some water now."
+    ],
+    "expect_unknown_flag": true,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 18,
+    "words": [
+      "pain",
+      "help",
+      "me"
+    ],
+    "expected_intent": "emergency",
+    "expected_sentences": [
+      "Help me, I am in pain.",
+      "I am in pain, please help me."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 19,
+    "words": [
+      "hello",
+      "you"
+    ],
+    "expected_intent": "greeting",
+    "expected_sentences": [
+      "Hello.",
+      "Hello to you."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 20,
+    "words": [
+      "me",
+      "need",
+      "help",
+      "now"
+    ],
+    "expected_intent": "emergency",
+    "expected_sentences": [
+      "I need help now.",
+      "Please help me now."
+    ],
+    "expect_unknown_flag": true,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 21,
+    "words": [
+      "me",
+      "water"
+    ],
+    "expected_intent": "statement",
+    "expected_sentences": [
+      "I want water.",
+      "I need water."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 22,
+    "words": [
+      "you",
+      "name"
+    ],
+    "expected_intent": "statement",
+    "expected_sentences": [
+      "Your name.",
+      "What is your name?"
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Ambiguous: statement or question reading.",
+    "needs_review": true,
+    "acceptable_intents": [
+      "statement",
+      "question"
+    ]
+  },
+  {
+    "id": 23,
+    "words": [
+      "me",
+      "want",
+      "water",
+      "please"
+    ],
+    "expected_intent": "request",
+    "expected_sentences": [
+      "I want water, please.",
+      "Please, I want water."
+    ],
+    "expect_unknown_flag": true,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 24,
+    "words": [
+      "unknownword"
+    ],
+    "expected_intent": "statement",
+    "expected_sentences": [
+      ""
+    ],
+    "expect_unknown_flag": true,
+    "notes": "All words unknown: no sentence returned, unknown flagged.",
+    "needs_review": true
+  },
+  {
+    "id": 25,
+    "words": [
+      "me",
+      "pain",
+      "help"
+    ],
+    "expected_intent": "emergency",
+    "expected_sentences": [
+      "I am in pain, please help me.",
+      "Help me, I am in pain."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 26,
+    "words": [
+      "hi",
+      "me"
+    ],
+    "expected_intent": "greeting",
+    "expected_sentences": [
+      "Hi.",
+      "Hi, it is me."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Added reasonable variant from last run.",
+    "needs_review": true
+  },
+  {
+    "id": 27,
+    "words": [
+      "what",
+      "name"
+    ],
+    "expected_intent": "question",
+    "expected_sentences": [
+      "What is your name?",
+      "What name?"
+    ],
+    "expect_unknown_flag": true,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 28,
+    "words": [
+      "me",
+      "need"
+    ],
+    "expected_intent": "request",
+    "expected_sentences": [
+      "I need."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 29,
+    "words": [
+      "water",
+      "me",
+      "want"
+    ],
+    "expected_intent": "request",
+    "expected_sentences": [
+      "I want some water.",
+      "I would like water, please."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Drafted expected sentence; review.",
+    "needs_review": true
+  },
+  {
+    "id": 30,
+    "words": [
+      "help",
+      "pain"
+    ],
+    "expected_intent": "emergency",
+    "expected_sentences": [
+      "Help, I am in pain.",
+      "I am in pain, help me.",
+      "I am in pain, please help."
+    ],
+    "expect_unknown_flag": false,
+    "notes": "Added reasonable variant from last run.",
+    "needs_review": true
+  }
+]
