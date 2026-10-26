@@ -9,10 +9,6 @@ Uses LSTM neutral network
 - Over 90% accuracy
 - voice feature reading the signs
 
-
-
-Future AI API interpretation of words for full sentence sturcture stay tunned!!
-Working on making it a usable app on windows without any venv setup (failing lol but it'll work out somehow trust)
   
 
 
@@ -20,12 +16,11 @@ Working on making it a usable app on windows without any venv setup (failing lol
 Clone the repo
 
 
-    git clone https://github.com/Malia-lai/Hand-Tracking-Module
+    git clone https://github.com/Malia-lai/Sign-Bridge
 
 
 # Requirements
  py 2.9 (need to be compatible with mediapipe 0.10.9)
- Then download the requirements :3
 
     pip install -r requirements.txt
 
@@ -36,7 +31,7 @@ samplenum.py to check number of samples and/or if the numpy file containing your
 
 delete.py delete a specific gesture's data by writing the name you gave it inside the GESTURE dictionary.
 
-realtime.py to boot the code and sign in real life !
+realtime.py to boot the code and sign in real life
 
 
 
