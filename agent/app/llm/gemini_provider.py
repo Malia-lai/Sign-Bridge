@@ -40,7 +40,10 @@ class GeminiProvider(BaseLLMProvider):
         sync_sleep=time.sleep,
     ):
         self.api_key = api_key if api_key is not None else settings.gemini_api_key
-        self.model = model or settings.gemini_model
+        self.model = model if model is not None else settings.gemini_model
+        if not self.model or not isinstance(self.model, str) or not self.model.strip():
+            raise ValueError("model name must be a non-empty string")
+        self.model = self.model.strip()
         self.timeout = timeout if timeout is not None else settings.timeout
         self.max_retries = settings.max_retries if max_retries is None else int(max_retries)
         self.temperature = settings.temperature if temperature is None else float(temperature)
@@ -105,7 +108,24 @@ class GeminiProvider(BaseLLMProvider):
         if resp.status_code >= 400:
             raise GeminiAPIError(resp.status_code, resp.text)
         data = resp.json()
-        text = data["candidates"][0]["content"]["parts"][0]["text"]
+        candidates = data.get("candidates") or []
+        if not candidates:
+            pf = data.get("promptFeedback") or {}
+            block = pf.get("blockReason")
+            if block:
+                raise GeminiAPIError(403, f"safety block: {block}")
+            raise GeminiAPIError(400, "empty candidates")
+        candidate = candidates[0]
+        finish_reason = candidate.get("finishReason")
+        if finish_reason in {"SAFETY", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII"}:
+            raise GeminiAPIError(400, f"safety block: {finish_reason}")
+        content = candidate.get("content") or {}
+        parts = content.get("parts") or []
+        if not parts:
+            raise GeminiAPIError(400, "empty candidates")
+        text = parts[0].get("text")
+        if text is None:
+            raise GeminiAPIError(400, "empty candidates")
         metadata = data.get("usageMetadata") or {}
         input_tokens = metadata.get("promptTokenCount", metadata.get("prompt_token_count"))
         output_tokens = metadata.get("candidatesTokenCount", metadata.get("candidates_token_count"))
@@ -178,7 +198,24 @@ class GeminiProvider(BaseLLMProvider):
                 if resp.status_code >= 400:
                     raise GeminiAPIError(resp.status_code, resp.text)
                 data = resp.json()
-                text = data["candidates"][0]["content"]["parts"][0]["text"]
+                candidates = data.get("candidates") or []
+                if not candidates:
+                    pf = data.get("promptFeedback") or {}
+                    block = pf.get("blockReason")
+                    if block:
+                        raise GeminiAPIError(403, f"safety block: {block}")
+                    raise GeminiAPIError(400, "empty candidates")
+                candidate = candidates[0]
+                finish_reason = candidate.get("finishReason")
+                if finish_reason in {"SAFETY", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII"}:
+                    raise GeminiAPIError(400, f"safety block: {finish_reason}")
+                content = candidate.get("content") or {}
+                parts = content.get("parts") or []
+                if not parts:
+                    raise GeminiAPIError(400, "empty candidates")
+                text = parts[0].get("text")
+                if text is None:
+                    raise GeminiAPIError(400, "empty candidates")
                 metadata = data.get("usageMetadata") or {}
                 input_tokens = metadata.get("promptTokenCount", metadata.get("prompt_token_count"))
                 output_tokens = metadata.get("candidatesTokenCount", metadata.get("candidates_token_count"))
@@ -205,6 +242,12 @@ class GeminiProvider(BaseLLMProvider):
                     continue
                 raise
         raise last
+
+    async def health_check(self) -> bool:
+        return bool(self.model)
+
+    def health_check_sync(self) -> bool:
+        return bool(self.model)
 
     async def close(self):
         await self._async_client.aclose()

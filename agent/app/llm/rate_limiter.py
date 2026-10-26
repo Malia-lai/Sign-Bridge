@@ -4,7 +4,7 @@ import threading
 import time
 from collections import deque
 from dataclasses import dataclass
-from typing import Callable, Deque
+from typing import Any, Callable, Deque
 
 
 WINDOW_SECONDS = 60.0
@@ -99,6 +99,38 @@ class SlidingWindowRateLimiter:
         with self._lock:
             reservation.tokens = actual_tokens
 
+    def reset(self) -> None:
+        with self._lock:
+            self._events.clear()
+
+    def stats(self) -> dict:
+        with self._lock:
+            now = self.clock()
+            while self._events and now - self._events[0].timestamp >= self.window_seconds:
+                self._events.popleft()
+            total_tokens = sum(e.tokens for e in self._events)
+            return {
+                "requests": len(self._events),
+                "tokens": total_tokens,
+                "requests_per_minute": self.requests_per_minute,
+                "tokens_per_minute": self.tokens_per_minute,
+                "window_seconds": self.window_seconds,
+            }
+
+    def snapshot(self) -> dict:
+        with self._lock:
+            return {
+                "requests_per_minute": self.requests_per_minute,
+                "tokens_per_minute": self.tokens_per_minute,
+                "events": [(e.timestamp, e.tokens) for e in self._events],
+            }
+
+    def restore(self, snapshot: dict) -> None:
+        with self._lock:
+            self._events.clear()
+            for ts, toks in (snapshot or {}).get("events", []):
+                self._events.append(Reservation(timestamp=ts, tokens=toks))
+
     @staticmethod
     def safe_calls_per_minute(
         estimated_tokens: int, requests_per_minute: int, tokens_per_minute: int
@@ -112,11 +144,47 @@ _shared_limiters: dict[tuple[int, int], SlidingWindowRateLimiter] = {}
 _shared_lock = threading.Lock()
 
 
-def get_shared_limiter(requests_per_minute: int, tokens_per_minute: int) -> SlidingWindowRateLimiter:
-    key = (requests_per_minute, tokens_per_minute)
+def get_shared_limiter(requests_per_minute: int, tokens_per_minute: int, key: Any = None) -> SlidingWindowRateLimiter:
+    base_key = (requests_per_minute, tokens_per_minute)
+    if key is None:
+        store_key = base_key
+    else:
+        store_key = (str(key),) + base_key
     with _shared_lock:
-        limiter = _shared_limiters.get(key)
+        limiter = _shared_limiters.get(store_key)
         if limiter is None:
-            limiter = SlidingWindowRateLimiter(*key)
-            _shared_limiters[key] = limiter
+            limiter = SlidingWindowRateLimiter(requests_per_minute, tokens_per_minute)
+            _shared_limiters[store_key] = limiter
         return limiter
+
+
+# per-user / per-api-key rate limiting
+_per_key_limiters: dict = {}
+_per_key_lock = threading.Lock()
+
+
+def get_limiter_for_key(key: Any, requests_per_minute: int = 30, tokens_per_minute: int = 14000) -> SlidingWindowRateLimiter:
+    store_key = (str(key), requests_per_minute, tokens_per_minute)
+    with _per_key_lock:
+        limiter = _per_key_limiters.get(store_key)
+        if limiter is None:
+            limiter = SlidingWindowRateLimiter(requests_per_minute, tokens_per_minute)
+            _per_key_limiters[store_key] = limiter
+        return limiter
+
+
+def get_user_limiter(user_id: Any, requests_per_minute: int = 30, tokens_per_minute: int = 14000) -> SlidingWindowRateLimiter:
+    return get_limiter_for_key(f"user:{user_id}", requests_per_minute, tokens_per_minute)
+
+
+def get_api_key_limiter(api_key: Any, requests_per_minute: int = 30, tokens_per_minute: int = 14000) -> SlidingWindowRateLimiter:
+    return get_limiter_for_key(f"apikey:{api_key}", requests_per_minute, tokens_per_minute)
+
+
+class PerKeyRateLimiter:
+    def __init__(self, requests_per_minute: int = 30, tokens_per_minute: int = 14000):
+        self.requests_per_minute = requests_per_minute
+        self.tokens_per_minute = tokens_per_minute
+
+    def for_key(self, key: Any) -> SlidingWindowRateLimiter:
+        return get_limiter_for_key(key, self.requests_per_minute, self.tokens_per_minute)

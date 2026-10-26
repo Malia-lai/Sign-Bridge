@@ -50,20 +50,20 @@ add persistence/feedback, and ship it.
 
 ## Phase 3 — LLM Providers & Rate Limiting (25–38)
 
-25. [ ] Add rate-limiter integration to `MistralProvider` (parity with Gemini).
-26. [ ] Add usage tracking (input/output tokens) to `MistralProvider`.
-27. [ ] Add `close()` method to `MistralProvider`.
-28. [ ] Handle empty candidates / safety blocks in `GeminiProvider`.
-29. [ ] Validate model name on provider init.
-30. [ ] Provide default `generate_sync` in `BaseLLMProvider`.
-31. [ ] Add provider registry/factory for new providers (OpenAI, etc.).
-32. [ ] Add provider health-check method.
-33. [ ] Add `reset()` and `stats()` to `SlidingWindowRateLimiter`.
-34. [ ] (Optional) persist rate-limit window state in a shared store.
-35. [ ] Add per-user/per-API-key rate limiting.
-36. [ ] Add circuit breaker for providers.
-37. [ ] Add provider selection strategy (primary + fallback chain).
-38. [ ] Add mocked tests for `MistralProvider`.
+25. [x] Add rate-limiter integration to `MistralProvider` (parity with Gemini).
+26. [x] Add usage tracking (input/output tokens) to `MistralProvider`.
+27. [x] Add `close()` method to `MistralProvider`.
+28. [x] Handle empty candidates / safety blocks in `GeminiProvider`.
+29. [x] Validate model name on provider init.
+30. [x] Provide default `generate_sync` in `BaseLLMProvider`.
+31. [x] Add provider registry/factory for new providers (OpenAI, etc.).
+32. [x] Add provider health-check method.
+33. [x] Add `reset()` and `stats()` to `SlidingWindowRateLimiter`.
+34. [x] (Optional) persist rate-limit window state in a shared store.
+35. [x] Add per-user/per-API-key rate limiting.
+36. [x] Add circuit breaker for providers.
+37. [x] Add provider selection strategy (primary + fallback chain).
+38. [x] Add mocked tests for `MistralProvider`.
 
 ## Phase 4 — API Layer (39–52)
 

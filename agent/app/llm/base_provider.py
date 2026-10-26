@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
@@ -24,7 +25,31 @@ class BaseLLMProvider(ABC):
         return await self.generate(system_prompt, user_prompt)
 
     def generate_sync(self, system_prompt: str, user_prompt: str) -> str:
-        raise NotImplementedError
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        if loop.is_running():
+            # Cannot block; create a new loop in a thread is complex. Fall back to new loop.
+            new_loop = asyncio.new_event_loop()
+            try:
+                return new_loop.run_until_complete(self.generate(system_prompt, user_prompt))
+            finally:
+                new_loop.close()
+        return loop.run_until_complete(self.generate(system_prompt, user_prompt))
+
+    async def health_check(self) -> bool:
+        return True
+
+    def health_check_sync(self) -> bool:
+        return True
+
+    async def close(self):
+        return None
 
     def complete_sync(self, messages: List[Dict[str, str]]) -> str:
         system_prompt = ""
