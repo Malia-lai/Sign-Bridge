@@ -11,6 +11,10 @@ from app.core.confidence import below_threshold as below_threshold_helper
 from app.core.confidence import aggregate_confidence, detect_unknown, ensure_alternatives, vocabulary_words
 from app.core.fallback import build_fallback, detect_emergency
 from app.llm.base_provider import classify_error
+from app.services.correction_service import CorrectionService
+from app.services.history_service import HistoryService
+from app.services.vocabulary_service import VocabularyService
+from app.services.prompt_service import PromptService
 from app.llm.client import LLMClient, _extract_json
 from app.utils.timing import TimingContext
 from app.schemas.request import SentenceRequest
@@ -55,6 +59,15 @@ class Agent:
         emergency_keywords=None,
         fallback_to_mock=None,
         system_prompt=None,
+        correction_service=None,
+        history_service=None,
+        vocabulary_service=None,
+        prompt_service=None,
+        learning_enabled=None,
+        record_history=None,
+        prompt_variant=None,
+        ab_testing=None,
+        **kwargs,
     ):
         self.vocabulary = vocabulary if vocabulary is not None else load_vocabulary()
         self.examples = examples if examples is not None else load_examples()
@@ -94,6 +107,45 @@ class Agent:
         self.emergency_keywords = emergency_keywords
         self.fallback_to_mock = getattr(settings, "fallback_to_mock", True) if fallback_to_mock is None else bool(fallback_to_mock)
 
+        # services
+        self.learning_enabled = getattr(settings, "correction_learning", True) if learning_enabled is None else bool(learning_enabled)
+        self.record_history = True if record_history is None else bool(record_history)
+        self.prompt_variant = prompt_variant
+        self.ab_testing = ab_testing
+
+        if vocabulary_service is not None:
+            self.vocabulary_service = vocabulary_service
+        else:
+            self.vocabulary_service = VocabularyService(agent=self, vocabulary=self.vocabulary)
+        if self.vocabulary_service is not None and getattr(self.vocabulary_service, "agent", None) is None:
+            self.vocabulary_service.agent = self
+        # keep vocabulary in sync
+        try:
+            self.vocabulary = self.vocabulary_service.get_vocabulary()
+        except Exception:
+            pass
+
+        if correction_service is not None:
+            self.correction_service = correction_service
+        else:
+            self.correction_service = CorrectionService(agent=self, vocabulary=self.vocabulary, learning_enabled=self.learning_enabled)
+        if self.correction_service is not None and getattr(self.correction_service, "agent", None) is None:
+            self.correction_service.agent = self
+        if self.correction_service is not None and getattr(self.correction_service, "vocabulary", None) is None:
+            self.correction_service.vocabulary = self.vocabulary
+
+        if history_service is not None:
+            self.history_service = history_service
+        else:
+            self.history_service = HistoryService(agent=self, max_items=getattr(settings, "history_size", 1000))
+
+        if prompt_service is not None:
+            self.prompt_service = prompt_service
+        else:
+            self.prompt_service = PromptService(agent=self, template=self._system_template)
+        if self.prompt_service is not None and getattr(self.prompt_service, "agent", None) is None:
+            self.prompt_service.agent = self
+
         # simple stats
         self.last_retry_count = 0
         self.cache_hits = 0
@@ -102,12 +154,143 @@ class Agent:
     def vocab_words(self) -> List[str]:
         return vocabulary_words(self.vocabulary)
 
+    # ------------------------------------------------------------------ #
+    # Learning / management helpers
+    # ------------------------------------------------------------------ #
+    def add_example(self, words: Any = None, sentence: Any = None, intent: str = "statement", alternatives: Any = None, confidence: Any = None, **kwargs: Any) -> None:
+        if sentence is None and isinstance(words, dict):
+            sentence = words.get("sentence")
+            words = words.get("words", words.get("input"))
+            intent = words and words.get("intent", intent) if isinstance(words, dict) else intent
+        if words is None:
+            words = kwargs.get("words", kwargs.get("input", []))
+        if sentence is None:
+            sentence = kwargs.get("sentence", kwargs.get("output"))
+        if intent is None:
+            intent = kwargs.get("intent", "statement")
+        if alternatives is None:
+            alternatives = kwargs.get("alternatives", [])
+        try:
+            self.examples = list(self.examples or [])
+            self.examples.append({
+                "words": list(words or []),
+                "sentence": sentence,
+                "intent": intent,
+                "alternatives": list(alternatives or []),
+            })
+        except Exception:
+            pass
+
+    def add_vocabulary_word(self, word: Any, tags: Any = None, metadata: Any = None, **kwargs: Any) -> None:
+        try:
+            if self.vocabulary_service is not None:
+                self.vocabulary_service.add(word=word, tags=tags, metadata=metadata, **kwargs)
+                self.vocabulary = self.vocabulary_service.get_vocabulary()
+            else:
+                # fallback direct
+                if isinstance(self.vocabulary, dict) and isinstance(self.vocabulary.get("words"), list):
+                    if str(word).lower() not in {str(x.get("word", x) if isinstance(x, dict) else x).lower() for x in self.vocabulary["words"]}:
+                        self.vocabulary["words"].append({"word": str(word).strip(), "tags": list(tags or []), "metadata": dict(metadata or {})})
+        except Exception:
+            pass
+
+    def remove_vocabulary_word(self, word: Any, **kwargs: Any) -> bool:
+        try:
+            if self.vocabulary_service is not None:
+                res = self.vocabulary_service.remove(word=word, **kwargs)
+                self.vocabulary = self.vocabulary_service.get_vocabulary()
+                return bool(res)
+        except Exception:
+            pass
+        return False
+
+    def set_vocabulary(self, vocabulary: Any) -> None:
+        self.vocabulary = vocabulary
+        if self.vocabulary_service is not None:
+            try:
+                self.vocabulary_service.vocabulary = vocabulary
+            except Exception:
+                pass
+
+    def reload_vocabulary(self, path: Optional[str] = None) -> None:
+        if self.vocabulary_service is not None:
+            self.vocabulary_service.reload(path)
+            self.vocabulary = self.vocabulary_service.get_vocabulary()
+
+    def get_vocabulary(self) -> Any:
+        return self.vocabulary
+
+    def set_system_prompt(self, template: Any, name: str = "default", version: Optional[str] = None, variant: Optional[str] = None) -> None:
+        if isinstance(template, str):
+            self._system_template = template
+        if self.prompt_service is not None:
+            try:
+                self.prompt_service.add_template(name, str(template), version=version, variant=variant)
+                self.prompt_service.activate(name)
+            except Exception:
+                pass
+
+    def get_system_prompt(self) -> str:
+        return self._system_template
+
+    def list_prompt_templates(self) -> Any:
+        if self.prompt_service is not None:
+            return self.prompt_service.list_templates()
+        return []
+
+    def get_prompt_template(self, name: Optional[str] = None, variant: Optional[str] = None) -> Any:
+        if self.prompt_service is not None:
+            return self.prompt_service.get_template(name, variant=variant)
+        return None
+
+    def select_prompt_variant(self, key: Any = None, context: Any = None, **kwargs: Any) -> str:
+        if self.prompt_service is not None:
+            return self.prompt_service.select_variant(key=key, context=context, **kwargs)
+        return self.prompt_variant or "default"
+
+    def apply_correction(self, *args, **kwargs: Any) -> Any:
+        if self.correction_service is not None:
+            return self.correction_service.record(*args, **kwargs)
+        return None
+
+    def learn_from_correction(self, *args, **kwargs: Any) -> Any:
+        if self.correction_service is not None:
+            try:
+                return self.correction_service.learn(*args, **kwargs)
+            except Exception:
+                try:
+                    return self.correction_service.apply(*args, **kwargs)
+                except Exception:
+                    return None
+        return None
+
+    def record_history(self, *args, **kwargs: Any) -> Any:
+        if self.history_service is not None:
+            return self.history_service.add(*args, **kwargs)
+        return None
+
     def _unknown(self, words: List[str]) -> List[str]:
         return detect_unknown(words, self.vocabulary)
 
-    def _build_system_prompt(self, output_language: Optional[str] = None) -> str:
+    def _build_system_prompt(self, output_language: Optional[str] = None, variant: Optional[str] = None) -> str:
         lang = output_language or settings.output_language
-        system = self._system_template.replace("{output_language}", lang)
+        variant = variant if variant is not None else self.prompt_variant
+        # A/B variant selection
+        if self.ab_testing and self.prompt_service is not None and getattr(self.prompt_service, "ab_enabled", False):
+            try:
+                variant = self.prompt_service.select_variant(key=self.prompt_variant, context=variant)
+            except Exception:
+                pass
+        if self.prompt_service is not None:
+            try:
+                base = self.prompt_service.get_text(variant=variant) or self.prompt_service.get_text()
+            except Exception:
+                base = None
+        else:
+            base = None
+        if not base:
+            base = self._system_template
+        system = str(base).replace("{output_language}", lang)
         system += "\n\nKnown vocabulary: " + ", ".join(self.vocab_words)
         if self.examples:
             system += "\n\nExamples (words -> JSON):"
@@ -119,6 +302,17 @@ class Agent:
                     "alternatives": ex.get("alternatives", []),
                 }
                 system += f"\nWords: {words}\n{json.dumps(out)}"
+        # learned examples from corrections
+        try:
+            corr = getattr(self, "correction_service", None)
+            if corr is not None:
+                for rec in (corr.all() if hasattr(corr, "all") else []):
+                    if rec.corrected_sentence:
+                        ws = rec.words or []
+                        out = {"sentence": rec.corrected_sentence, "intent": "statement", "alternatives": []}
+                        system += f"\nWords: {ws}\n{json.dumps(out)}"
+        except Exception:
+            pass
         return system
 
     def _build_user_prompt(self, words: List[str], confidences: List[float], alternatives: List[List[str]], unknown: List[str]) -> str:
@@ -211,6 +405,12 @@ class Agent:
         unknown = self._unknown(words)
         language = req.language or settings.output_language
         self.last_raw_output = None
+        req_prompt_variant = None
+        for attr in ("prompt_variant", "variant", "ab_variant", "prompt_version"):
+            val = getattr(req, attr, None)
+            if val:
+                req_prompt_variant = val
+                break
         timeout = req.timeout if getattr(req, "timeout", None) is not None else self.timeout
         if timeout is None:
             timeout = settings.timeout
@@ -230,6 +430,7 @@ class Agent:
                     resp_copy = cached_resp
                 resp_copy.cached = True
                 self.cache_hits += 1
+                self._record_history(resp_copy, words, language, req, cached=True)
                 return resp_copy
 
         timings: dict = {}
@@ -241,6 +442,7 @@ class Agent:
             self._maybe_cache(cache_key, resp)
             if self.buffer is not None:
                 self.buffer.extend(words)
+            self._record_history(resp, words, language, req)
             return resp
 
         # agent-level retry loop
@@ -272,7 +474,7 @@ class Agent:
                 result_resp = resp
                 break
 
-            system = self._build_system_prompt(language)
+            system = self._build_system_prompt(language, variant=req_prompt_variant)
             user = self._build_user_prompt(words, confidences, alts, unknown)
             if strict:
                 system = system + "\n\nIMPORTANT: Return ONLY valid JSON matching the required schema. No markdown, no extra text."
@@ -334,6 +536,7 @@ class Agent:
             self._maybe_cache(cache_key, result_resp)
             if self.buffer is not None:
                 self.buffer.extend(words)
+            self._record_history(result_resp, words, language, req)
             return result_resp
 
         # repeated provider failure -> fallback
@@ -366,6 +569,7 @@ class Agent:
             self._maybe_cache(cache_key, resp)
             if self.buffer is not None:
                 self.buffer.extend(words)
+            self._record_history(resp, words, language, req)
             return resp
 
         if detect_emergency(words, self.vocabulary, emergency_keywords=self.emergency_keywords):
@@ -397,7 +601,28 @@ class Agent:
         self._maybe_cache(cache_key, resp)
         if self.buffer is not None:
             self.buffer.extend(words)
+        self._record_history(resp, words, language, req)
         return resp
+
+    def _record_history(self, resp, words, language, req=None, cached=False):
+        if not getattr(self, "record_history", True):
+            return None
+        if getattr(self, "history_service", None) is None:
+            return None
+        try:
+            request_id = None
+            if req is not None:
+                request_id = getattr(req, "request_id", None)
+            return self.history_service.add(
+                words=list(words or []),
+                result=resp,
+                language=language,
+                cached=cached,
+                request_id=request_id,
+                metadata={"cached": bool(cached)},
+            )
+        except Exception:
+            return None
 
     def _finalize_timings(self, resp, timings, t_total):
         if "total" not in timings:

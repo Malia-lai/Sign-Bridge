@@ -37,6 +37,10 @@ class SentenceRequest(BaseModel):
     language: Optional[str] = None
     timeout: Optional[float] = None
     max_words: Optional[int] = None
+    request_id: Optional[str] = None
+    prompt_variant: Optional[str] = None
+    variant: Optional[str] = None
+    ab_variant: Optional[str] = None
 
     @field_validator("words", mode="before")
     @classmethod

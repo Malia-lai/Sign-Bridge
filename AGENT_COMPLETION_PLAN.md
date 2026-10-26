@@ -84,14 +84,14 @@ add persistence/feedback, and ship it.
 
 ## Phase 5 — Services & Business Logic (53–62)
 
-53. [ ] Implement `app/services/correction_service.py`.
-54. [ ] Implement `app/services/history_service.py`.
-55. [ ] Add history endpoints (`GET`/`DELETE /history`).
-56. [ ] Feed corrections back into the agent (learning loop).
-57. [ ] Add vocabulary management endpoints (add/remove/list).
-58. [ ] Add import/export vocabulary.
-59. [ ] Make prompt templates loadable from config/DB.
-60. [ ] (Optional) A/B test prompts.
+53. [x] Implement `app/services/correction_service.py`.
+54. [x] Implement `app/services/history_service.py`.
+55. [x] Add history endpoints (`GET`/`DELETE /history`).
+56. [x] Feed corrections back into the agent (learning loop).
+57. [x] Add vocabulary management endpoints (add/remove/list).
+58. [x] Add import/export vocabulary.
+59. [x] Make prompt templates loadable from config/DB.
+60. [x] (Optional) A/B test prompts.
 
 ## Phase 6 — Data & Persistence (63–72)
 

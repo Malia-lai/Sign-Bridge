@@ -45,6 +45,13 @@ class Settings:
         self.fallback_to_mock = _bool(_env("FALLBACK_TO_MOCK", default="true"))
         self.emergency_keywords = _env("EMERGENCY_KEYWORDS", default="help,pain,danger,emergency,urgent,sos")
         self.supported_languages = _env("SUPPORTED_LANGUAGES", default="")
+        self.history_size = int(_env("HISTORY_SIZE", "MAX_HISTORY", default="1000"))
+        self.vocabulary_path = _env("VOCABULARY_PATH", "VOCAB_PATH", default="")
+        self.prompt_template_path = _env("PROMPT_TEMPLATE_PATH", "SYSTEM_PROMPT_PATH", default="")
+        self.prompt_templates_dir = _env("PROMPT_TEMPLATES_DIR", default="")
+        self.prompt_ab_enabled = _bool(_env("PROMPT_AB_ENABLED", default="false"))
+        self.prompt_variants = _env("PROMPT_VARIANTS", default="A,B")
+        self.correction_learning = _bool(_env("CORRECTION_LEARNING", "LEARN_FROM_CORRECTIONS", default="true"))
         self.log_level = _env("LOG_LEVEL", default="INFO").upper()
         self.log_format = _env("LOG_FORMAT", default="console").lower()
         self.cors_origins = _env("CORS_ORIGINS", "ALLOWED_ORIGINS", "CORS_ALLOWED_ORIGINS", default="*")
@@ -77,6 +84,13 @@ class Settings:
         self.FALLBACK_TO_MOCK = self.fallback_to_mock
         self.EMERGENCY_KEYWORDS = self.emergency_keywords
         self.SUPPORTED_LANGUAGES = self.supported_languages
+        self.HISTORY_SIZE = self.history_size
+        self.VOCABULARY_PATH = self.vocabulary_path
+        self.PROMPT_TEMPLATE_PATH = self.prompt_template_path
+        self.PROMPT_TEMPLATES_DIR = self.prompt_templates_dir
+        self.PROMPT_AB_ENABLED = self.prompt_ab_enabled
+        self.PROMPT_VARIANTS = self.prompt_variants
+        self.CORRECTION_LEARNING = self.correction_learning
         self.TEMPERATURE = self.temperature
 
 

@@ -61,7 +61,26 @@ def get_agent(request: Optional[Request] = None) -> Agent:
             if ag is not None:
                 return ag
     s = get_settings()
-    return Agent(mock_mode=s.mock_mode)
+    agent = Agent(mock_mode=s.mock_mode)
+    # attach shared services if available
+    try:
+        from app.services.history_service import get_history_service
+        from app.services.correction_service import get_correction_service
+        from app.services.vocabulary_service import get_vocabulary_service
+        from app.services.prompt_service import get_prompt_service
+
+        agent.history_service = get_history_service()
+        agent.correction_service = get_correction_service()
+        agent.vocabulary_service = get_vocabulary_service()
+        agent.prompt_service = get_prompt_service()
+        for svc in (agent.history_service, agent.correction_service, agent.vocabulary_service, agent.prompt_service):
+            try:
+                svc.agent = agent
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return agent
 
 
 # aliases

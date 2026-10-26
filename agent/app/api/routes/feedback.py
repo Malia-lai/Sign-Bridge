@@ -4,7 +4,7 @@ import threading
 import time
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from app.schemas.feedback import FeedbackCreate, FeedbackRecord, FeedbackResponse, FeedbackStats
 
@@ -40,7 +40,7 @@ def _to_number(value: Any) -> Optional[float]:
 
 
 @router.post("/feedback", response_model=FeedbackResponse, tags=["feedback"])
-async def submit_feedback(payload: FeedbackCreate) -> FeedbackResponse:
+async def submit_feedback(payload: FeedbackCreate, request: Request = None) -> FeedbackResponse:
     with _LOCK:
         _COUNTER["n"] += 1
         fid = _COUNTER["n"]
@@ -56,6 +56,50 @@ async def submit_feedback(payload: FeedbackCreate) -> FeedbackResponse:
             created_at=datetime_now(),
         )
         _STORE.append(record)
+    # Feed corrections back into the agent (learning loop)
+    try:
+        app = getattr(request, "app", None) if request is not None else None
+        state = getattr(app, "state", None) if app is not None else None
+        correction_service = getattr(state, "correction_service", None) if state is not None else None
+        if correction_service is None:
+            from app.services.correction_service import get_correction_service
+
+            correction_service = get_correction_service()
+        agent = getattr(state, "agent", None) if state is not None else None
+        history_service = getattr(state, "history_service", None) if state is not None else None
+        if history_service is None:
+            from app.services.history_service import get_history_service
+
+            history_service = get_history_service()
+        st = getattr(request.app, "state", None)
+        from app.main import app as global_app
+        if payload.corrected_sentence:
+            correction_service.record(
+                request_id=payload.request_id,
+                words=list(payload.words or []),
+                original_sentence=payload.original_sentence,
+                corrected_sentence=payload.corrected_sentence,
+                rating=payload.rating,
+                comment=payload.comment,
+                metadata=dict(payload.metadata or {}),
+                agent=agent,
+            )
+            if history_service is not None:
+                matched = False
+                if payload.request_id:
+                    for h in history_service.all():
+                        if h.request_id == payload.request_id:
+                            h.corrected_sentence = payload.corrected_sentence
+                            matched = True
+                if not matched:
+                    candidates = [
+                        h for h in history_service.all()
+                        if (not payload.words) or (h.words == [str(w).strip() for w in payload.words if str(w).strip()])
+                    ]
+                    if candidates:
+                        candidates[-1].corrected_sentence = payload.corrected_sentence
+    except Exception as e:
+        pass
     return FeedbackResponse(status="ok", id=fid, created_at=record.created_at)
 
 

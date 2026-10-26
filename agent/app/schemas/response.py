@@ -36,6 +36,7 @@ class SentenceResponse(BaseModel):
     unknown_words: List[str] = Field(default_factory=list)
     raw_words: List[str] = Field(default_factory=list)
     cached: bool = False
+    request_id: Optional[str] = None
     timings: Dict[str, Any] = Field(default_factory=dict)
     stage_timings: Dict[str, Any] = Field(default_factory=dict)
     timing: Dict[str, Any] = Field(default_factory=dict)
