@@ -63,6 +63,7 @@ class Agent:
         history_service=None,
         vocabulary_service=None,
         prompt_service=None,
+        feedback_service=None,
         learning_enabled=None,
         record_history=None,
         prompt_variant=None,
@@ -143,6 +144,12 @@ class Agent:
             self.prompt_service = prompt_service
         else:
             self.prompt_service = PromptService(agent=self, template=self._system_template)
+        if feedback_service is not None:
+            self.feedback_service = feedback_service
+        else:
+            from app.services.feedback_service import FeedbackService
+
+            self.feedback_service = FeedbackService(agent=self)
         if self.prompt_service is not None and getattr(self.prompt_service, "agent", None) is None:
             self.prompt_service.agent = self
 
@@ -634,6 +641,41 @@ class Agent:
             resp.durations = dict(timings)
             resp.elapsed_ms = timings["total"] * 1000.0
             resp.duration_ms = resp.elapsed_ms
+        except Exception:
+            pass
+        # confidence calibration from feedback
+        try:
+            fs = getattr(self, "feedback_service", None)
+            if fs is not None and hasattr(fs, "calibrate_confidence"):
+                resp.confidence = fs.calibrate_confidence(resp.confidence, words=list(getattr(resp, "raw_words", []) or []))
+        except Exception:
+            pass
+        # "did you mean?" suggestions for unknown words
+        try:
+            unknown = list(getattr(resp, "unknown_words", []) or [])
+            suggestions = []
+            fs = getattr(self, "feedback_service", None)
+            if fs is not None:
+                for w in unknown:
+                    try:
+                        suggestions.extend(fs.suggest(w, vocabulary=self.vocabulary))
+                    except Exception:
+                        pass
+            # fallback to correction service
+            if not suggestions:
+                cs = getattr(self, "correction_service", None)
+                if cs is not None and hasattr(cs, "did_you_mean"):
+                    for w in unknown:
+                        try:
+                            suggestions.extend(cs.did_you_mean(w, vocabulary=self.vocabulary))
+                        except Exception:
+                            pass
+            deduped = list(dict.fromkeys(str(s).strip() for s in suggestions if str(s).strip()))
+            try:
+                resp.suggestions = deduped
+                resp.did_you_mean = deduped
+            except Exception:
+                pass
         except Exception:
             pass
 

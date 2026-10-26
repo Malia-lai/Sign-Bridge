@@ -73,6 +73,9 @@ def get_agent(request: Optional[Request] = None) -> Agent:
         agent.correction_service = get_correction_service()
         agent.vocabulary_service = get_vocabulary_service()
         agent.prompt_service = get_prompt_service()
+        from app.services.feedback_service import get_feedback_service
+
+        agent.feedback_service = get_feedback_service()
         for svc in (agent.history_service, agent.correction_service, agent.vocabulary_service, agent.prompt_service):
             try:
                 svc.agent = agent

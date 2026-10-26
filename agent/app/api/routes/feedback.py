@@ -1,134 +1,134 @@
 """Feedback endpoints."""
 
 import threading
-import time
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import PlainTextResponse
 
 from app.schemas.feedback import FeedbackCreate, FeedbackRecord, FeedbackResponse, FeedbackStats
+from app.services.feedback_service import get_feedback_service
 
 router = APIRouter(tags=["feedback"])
 
-_STORE: List[FeedbackRecord] = []
+# Shared store (kept in sync with the feedback service)
+_FEEDBACK_SERVICE = get_feedback_service()
+_STORE: List[FeedbackRecord] = _FEEDBACK_SERVICE._items
 _LOCK = threading.Lock()
 _COUNTER = {"n": 0}
 
 
+def _service(request: Optional[Request] = None) -> Any:
+    if request is not None:
+        state = getattr(getattr(request, "app", None), "state", None)
+        if state is not None:
+            svc = getattr(state, "feedback_service", None)
+            if svc is not None:
+                return svc
+    return get_feedback_service()
+
+
 def reset_feedback_store() -> None:
+    svc = get_feedback_service()
+    svc.clear()
     with _LOCK:
-        _STORE.clear()
         _COUNTER["n"] = 0
 
 
 def get_feedback_store() -> List[FeedbackRecord]:
-    with _LOCK:
-        return list(_STORE)
-
-
-def _to_number(value: Any) -> Optional[float]:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return float(value)
-    if isinstance(value, (int, float)):
-        return float(value)
-    try:
-        return float(str(value))
-    except (TypeError, ValueError):
-        return None
+    return list(_STORE)
 
 
 @router.post("/feedback", response_model=FeedbackResponse, tags=["feedback"])
 async def submit_feedback(payload: FeedbackCreate, request: Request = None) -> FeedbackResponse:
-    with _LOCK:
-        _COUNTER["n"] += 1
-        fid = _COUNTER["n"]
-        record = FeedbackRecord(
-            id=fid,
-            request_id=payload.request_id,
-            words=list(payload.words or []),
-            original_sentence=payload.original_sentence,
-            corrected_sentence=payload.corrected_sentence,
-            rating=payload.rating,
-            comment=payload.comment,
-            metadata=dict(payload.metadata or {}),
-            created_at=datetime_now(),
-        )
-        _STORE.append(record)
-    # Feed corrections back into the agent (learning loop)
-    try:
-        app = getattr(request, "app", None) if request is not None else None
-        state = getattr(app, "state", None) if app is not None else None
-        correction_service = getattr(state, "correction_service", None) if state is not None else None
-        if correction_service is None:
-            from app.services.correction_service import get_correction_service
+    svc = _service(request)
+    agent = None
+    if request is not None:
+        state = getattr(getattr(request, "app", None), "state", None)
+        if state is not None:
+            agent = getattr(state, "agent", None)
+    record = svc.record(payload, agent=agent)
+    return FeedbackResponse(status="ok", id=record.id, created_at=record.created_at)
 
-            correction_service = get_correction_service()
-        agent = getattr(state, "agent", None) if state is not None else None
-        history_service = getattr(state, "history_service", None) if state is not None else None
-        if history_service is None:
-            from app.services.history_service import get_history_service
 
-            history_service = get_history_service()
-        st = getattr(request.app, "state", None)
-        from app.main import app as global_app
-        if payload.corrected_sentence:
-            correction_service.record(
-                request_id=payload.request_id,
-                words=list(payload.words or []),
-                original_sentence=payload.original_sentence,
-                corrected_sentence=payload.corrected_sentence,
-                rating=payload.rating,
-                comment=payload.comment,
-                metadata=dict(payload.metadata or {}),
-                agent=agent,
-            )
-            if history_service is not None:
-                matched = False
-                if payload.request_id:
-                    for h in history_service.all():
-                        if h.request_id == payload.request_id:
-                            h.corrected_sentence = payload.corrected_sentence
-                            matched = True
-                if not matched:
-                    candidates = [
-                        h for h in history_service.all()
-                        if (not payload.words) or (h.words == [str(w).strip() for w in payload.words if str(w).strip()])
-                    ]
-                    if candidates:
-                        candidates[-1].corrected_sentence = payload.corrected_sentence
-    except Exception as e:
-        pass
-    return FeedbackResponse(status="ok", id=fid, created_at=record.created_at)
+@router.get("/feedback", tags=["feedback"])
+async def list_feedback(request: Request = None, limit: Optional[int] = Query(default=None), offset: int = Query(default=0)):
+    svc = _service(request)
+    items = svc.list(limit=limit, offset=offset)
+    return [r.model_dump() if hasattr(r, "model_dump") else r for r in items]
 
 
 @router.get("/feedback/stats", response_model=FeedbackStats, tags=["feedback"])
-async def feedback_stats() -> FeedbackStats:
-    with _LOCK:
-        records = list(_STORE)
-    total = len(records)
-    nums = []
-    ratings: Dict[str, int] = {}
-    with_correction = 0
-    for r in records:
-        v = _to_number(r.rating)
-        if v is not None:
-            nums.append(v)
-        key = str(r.rating) if r.rating is not None else "none"
-        ratings[key] = ratings.get(key, 0) + 1
-        if r.corrected_sentence:
-            with_correction += 1
-    avg = (sum(nums) / len(nums)) if nums else None
-    return FeedbackStats(
-        total=total,
-        average_rating=avg,
-        ratings=ratings,
-        with_correction=with_correction,
-    )
+async def feedback_stats(request: Request = None) -> FeedbackStats:
+    svc = _service(request)
+    return svc.stats()
 
 
-def datetime_now() -> str:
-    from datetime import datetime, timezone
+@router.get("/feedback/metrics", tags=["feedback"])
+async def feedback_metrics(request: Request = None):
+    svc = _service(request)
+    return svc.accuracy_metrics()
 
-    return datetime.now(timezone.utc).isoformat()
+
+@router.get("/feedback/aggregate", tags=["feedback"])
+async def feedback_aggregate(request: Request = None):
+    svc = _service(request)
+    return svc.aggregate()
+
+
+@router.get("/feedback/export", tags=["feedback"])
+async def feedback_export(request: Request = None, format: str = Query(default="json")):
+    svc = _service(request)
+    data = svc.export(format=format)
+    if format in {"jsonl", "ndjson", "csv"}:
+        return PlainTextResponse(str(data))
+    if format in {"dataset", "training"}:
+        return data
+    return data
+
+
+@router.post("/feedback/apply", tags=["feedback"])
+async def feedback_apply(request: Request = None):
+    svc = _service(request)
+    agent = None
+    if request is not None:
+        state = getattr(getattr(request, "app", None), "state", None)
+        if state is not None:
+            agent = getattr(state, "agent", None)
+    count = svc.apply_feedback_to_prompt(agent=agent)
+    return {"status": "ok", "applied": count}
+
+
+@router.post("/feedback/suggest", tags=["feedback"])
+async def feedback_suggest(payload: Dict[str, Any], request: Request = None):
+    svc = _service(request)
+    agent = None
+    if request is not None:
+        state = getattr(getattr(request, "app", None), "state", None)
+        if state is not None:
+            agent = getattr(state, "agent", None)
+    word = payload.get("word") or payload.get("text")
+    vocabulary = payload.get("vocabulary")
+    if vocabulary is None and agent is not None:
+        vocabulary = getattr(agent, "vocabulary", None)
+    suggestions = svc.suggest(word, vocabulary=vocabulary, n=payload.get("n", 3))
+    return {"word": word, "suggestions": suggestions}
+
+@router.get("/feedback/{item_id}", tags=["feedback"])
+async def get_feedback(item_id: int, request: Request = None):
+    svc = _service(request)
+    rec = svc.get(item_id)
+    if rec is None:
+        raise HTTPException(status_code=404, detail="feedback not found")
+    return rec.model_dump() if hasattr(rec, "model_dump") else rec
+
+
+@router.delete("/feedback/{item_id}", tags=["feedback"])
+async def delete_feedback(item_id: int, request: Request = None):
+    svc = _service(request)
+    ok = svc.delete(item_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="feedback not found")
+    return {"status": "ok", "deleted": item_id}
+
+

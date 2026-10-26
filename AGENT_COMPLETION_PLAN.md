@@ -108,14 +108,14 @@ add persistence/feedback, and ship it.
 
 ## Phase 7 — Feedback & Correction (73–80)
 
-71. [ ] Design feedback schema (rating, corrected sentence, metadata).
-72. [ ] Implement feedback storage.
-73. [ ] Aggregate feedback for prompt tuning.
-74. [ ] Apply feedback-driven prompt improvements.
-75. [ ] Add "did you mean?" suggestions for unknown words.
-76. [ ] Calibrate confidence based on feedback.
-77. [ ] Compute accuracy metrics from feedback.
-78. [ ] Export feedback dataset for training.
+71. [x] Design feedback schema (rating, corrected sentence, metadata).
+72. [x] Implement feedback storage.
+73. [x] Aggregate feedback for prompt tuning.
+74. [x] Apply feedback-driven prompt improvements.
+75. [x] Add "did you mean?" suggestions for unknown words.
+76. [x] Calibrate confidence based on feedback.
+77. [x] Compute accuracy metrics from feedback.
+78. [x] Export feedback dataset for training.
 
 ## Phase 8 — WebSocket & Streaming (81–86)
 

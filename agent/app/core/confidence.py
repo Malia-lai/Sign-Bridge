@@ -134,6 +134,32 @@ min_confidence = lambda c: aggregate_confidence(c, "min")
 max_confidence = lambda c: aggregate_confidence(c, "max")
 
 
+def calibrate_confidence(confidence: Any, feedback: Any = None, ratings: Any = None, **kwargs: Any) -> float:
+    """Calibrate confidence using feedback ratings."""
+    base = clamp_confidence(confidence)
+    vals = []
+    if ratings is not None:
+        vals.extend(list(ratings))
+    if isinstance(feedback, (list, tuple)):
+        vals.extend(list(feedback))
+    elif isinstance(feedback, dict):
+        vals.extend(feedback.get("ratings", []) or [])
+    # normalize if needed
+    norm = []
+    for v in vals:
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            continue
+        if f > 1.0:
+            f = f / 5.0
+        norm.append(max(0.0, min(1.0, f)))
+    if not norm:
+        return base
+    avg = sum(norm) / len(norm)
+    return clamp_confidence((base + avg) / 2.0)
+
+
 def detect_unknown(words: List[str], vocabulary: Any) -> List[str]:
     known = set()
     if isinstance(vocabulary, dict):
@@ -164,6 +190,7 @@ def detect_unknown(words: List[str], vocabulary: Any) -> List[str]:
 
 # aliases
 is_below_threshold = below_threshold
+calibrate = calibrate_confidence
 check_confidence = below_threshold
 normalize = clamp_confidence
 

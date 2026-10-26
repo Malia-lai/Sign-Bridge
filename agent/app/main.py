@@ -52,6 +52,9 @@ async def lifespan(app: FastAPI):
     app.state.correction_service = get_correction_service()
     app.state.vocabulary_service = get_vocabulary_service()
     app.state.prompt_service = get_prompt_service()
+    from app.services.feedback_service import get_feedback_service
+
+    app.state.feedback_service = get_feedback_service()
 
     app.state.agent = Agent(
         mock_mode=settings.mock_mode,
@@ -60,9 +63,10 @@ async def lifespan(app: FastAPI):
         correction_service=app.state.correction_service,
         vocabulary_service=app.state.vocabulary_service,
         prompt_service=app.state.prompt_service,
+        feedback_service=app.state.feedback_service,
     )
     # sync service -> agent references
-    for svc in (app.state.history_service, app.state.correction_service, app.state.vocabulary_service, app.state.prompt_service):
+    for svc in (app.state.history_service, app.state.correction_service, app.state.vocabulary_service, app.state.prompt_service, app.state.feedback_service):
         try:
             svc.agent = app.state.agent
         except Exception:

@@ -2,6 +2,7 @@ from .correction_service import CorrectionService, CorrectionRecord, get_correct
 from .history_service import HistoryService, HistoryRecord, get_history_service, reset_history_store
 from .vocabulary_service import VocabularyService, VocabularyEntry, get_vocabulary_service, reset_vocabulary_store
 from .prompt_service import PromptService, PromptTemplate, get_prompt_service, reset_prompt_store
+from .feedback_service import FeedbackService, get_feedback_service, reset_feedback_service
 
 __all__ = [
     "CorrectionService",
@@ -20,4 +21,7 @@ __all__ = [
     "PromptTemplate",
     "get_prompt_service",
     "reset_prompt_store",
+    "FeedbackService",
+    "get_feedback_service",
+    "reset_feedback_service",
 ]
