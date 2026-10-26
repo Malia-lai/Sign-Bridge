@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 from pathlib import Path
 from typing import Any, List, Optional
 
@@ -9,6 +10,7 @@ from app.core.confidence import detect_unknown, ensure_alternatives, vocabulary_
 from app.core.fallback import build_fallback, detect_emergency
 from app.llm.base_provider import classify_error
 from app.llm.client import LLMClient, _extract_json
+from app.utils.timing import TimingContext
 from app.schemas.request import SentenceRequest
 from app.schemas.response import LLMOutput, SentenceResponse
 
@@ -128,24 +130,47 @@ class Agent:
         unknown = self._unknown(words)
         language = req.language or settings.output_language
         self.last_raw_output = None
+        timings: dict = {}
+        t_total = time.perf_counter()
 
         if not words:
-            return build_fallback(words, unknown_words=unknown, confidence=0.1, fallback_reason="empty_input")
+            resp = build_fallback(words, unknown_words=unknown, confidence=0.1, fallback_reason="empty_input")
+            timings["total"] = time.perf_counter() - t_total
+            resp.timings = timings
+            resp.stage_timings = dict(timings)
+            resp.timing = dict(timings)
+            resp.durations = dict(timings)
+            resp.elapsed_ms = timings["total"] * 1000.0
+            resp.duration_ms = resp.elapsed_ms
+            return resp
 
         if self.mock_mode:
+            t0 = time.perf_counter()
             resp = self._mock(words, unknown, confidences)
+            timings["mock"] = time.perf_counter() - t0
             self.last_raw_output = resp.sentence
+            timings["total"] = time.perf_counter() - t_total
+            resp.timings = timings
+            resp.stage_timings = dict(timings)
+            resp.timing = dict(timings)
+            resp.durations = dict(timings)
+            resp.elapsed_ms = timings["total"] * 1000.0
+            resp.duration_ms = resp.elapsed_ms
             return resp
 
         system = self._build_system_prompt(language)
         user = self._build_user_prompt(words, confidences, alts, unknown)
         try:
+            t0 = time.perf_counter()
             raw = await asyncio.wait_for(
                 self.llm_client.generate(system, user), timeout=settings.timeout
             )
+            timings["llm"] = time.perf_counter() - t0
             self.last_raw_output = raw
+            t1 = time.perf_counter()
             parsed = _extract_json(raw)
             validated = LLMOutput(**parsed)
+            timings["validation"] = time.perf_counter() - t1
             resp = SentenceResponse(
                 sentence=validated.sentence,
                 intent=validated.intent,
@@ -163,11 +188,20 @@ class Agent:
                 resp.emergency_override = True
             if below_threshold_helper(resp.confidence):
                 resp = ensure_alternatives(resp, raw_words=words)
+            timings["total"] = time.perf_counter() - t_total
+            resp.timings = timings
+            resp.stage_timings = dict(timings)
+            resp.timing = dict(timings)
+            resp.durations = dict(timings)
+            resp.elapsed_ms = timings["total"] * 1000.0
+            resp.duration_ms = resp.elapsed_ms
             return resp
         except Exception as exc:
             reason = classify_error(exc)
+            timings["error"] = reason
+            timings["total"] = time.perf_counter() - t_total
             if detect_emergency(words, self.vocabulary):
-                return build_fallback(
+                resp = build_fallback(
                     words,
                     unknown_words=unknown,
                     confidence=1.0,
@@ -177,13 +211,21 @@ class Agent:
                     emergency=True,
                     fallback_reasons=[reason, "emergency"],
                 )
-            return build_fallback(
-                words,
-                unknown_words=unknown,
-                confidence=0.1,
-                fallback_reason=reason,
-                fallback_reasons=[reason],
-            )
+            else:
+                resp = build_fallback(
+                    words,
+                    unknown_words=unknown,
+                    confidence=0.1,
+                    fallback_reason=reason,
+                    fallback_reasons=[reason],
+                )
+            resp.timings = timings
+            resp.stage_timings = dict(timings)
+            resp.timing = dict(timings)
+            resp.durations = dict(timings)
+            resp.elapsed_ms = timings["total"] * 1000.0
+            resp.duration_ms = resp.elapsed_ms
+            return resp
 
     async def process_words(self, words, **kwargs):
         return await self.process(SentenceRequest(words=list(words)))

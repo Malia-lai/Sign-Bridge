@@ -1,3 +1,4 @@
+import asyncio
 import json
 import re
 from typing import Any, Dict, List, Optional
@@ -66,6 +67,25 @@ class LLMClient:
     def generate_json_sync(self, system_prompt: str, user_prompt: str) -> Dict[str, Any]:
         raw = self.generate_sync(system_prompt, user_prompt)
         return _extract_json(raw)
+
+    async def close(self):
+        for provider in (self.provider, self.fallback_provider):
+            if provider is None:
+                continue
+            close = getattr(provider, "close", None)
+            if close is None:
+                continue
+            result = close()
+            if asyncio.iscoroutine(result):
+                await result
+
+    def close_sync(self):
+        for provider in (self.provider, self.fallback_provider):
+            if provider is None:
+                continue
+            close = getattr(provider, "close", None)
+            if close is not None:
+                close()
 
     async def _generate_with_fallback(self, system_prompt, user_prompt, sync=False):
         try:

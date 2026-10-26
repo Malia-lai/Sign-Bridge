@@ -35,6 +35,9 @@ class Settings:
         self.gemini_api_key = _env("GEMINI_API_KEY", default="")
         self.gemini_model = _env("GEMINI_MODEL", default="")
         self.fallback_provider = _env("FALLBACK_PROVIDER", default="").lower()
+        self.log_level = _env("LOG_LEVEL", default="INFO").upper()
+        self.log_format = _env("LOG_FORMAT", default="console").lower()
+        self.cors_origins = _env("CORS_ORIGINS", "ALLOWED_ORIGINS", "CORS_ALLOWED_ORIGINS", default="*")
         # uppercase aliases for env-style access
         self.OUTPUT_LANGUAGE = self.output_language
         self.MODEL_NAME = self.model_name
@@ -50,6 +53,10 @@ class Settings:
         self.GEMINI_API_KEY = self.gemini_api_key
         self.GEMINI_MODEL = self.gemini_model
         self.FALLBACK_PROVIDER = self.fallback_provider
+        self.LOG_LEVEL = self.log_level
+        self.LOG_FORMAT = self.log_format
+        self.CORS_ORIGINS = self.cors_origins
+        self.ALLOWED_ORIGINS = self.cors_origins
         self.TEMPERATURE = self.temperature
 
 

@@ -20,18 +20,18 @@ add persistence/feedback, and ship it.
 
 ## Phase 1 — Foundations & Utilities (1–12)
 
-1. [ ] Implement `app/utils/logger.py` with structured logging (JSON + console) and levels from env.
-2. [ ] Add `LOG_LEVEL`, `LOG_FORMAT` settings to `app/config.py`.
-3. [ ] Implement `app/utils/timing.py` with a context manager/decorator for per-stage timings.
-4. [ ] Expose per-stage timings in `SentenceResponse` (or a dedicated timings model).
-5. [ ] Implement `app/api/dependencies.py` (`get_settings`, `get_agent`, `get_llm_client`).
-6. [ ] Refactor `app/main.py` to use dependencies and a lifespan for startup/shutdown.
-7. [ ] Add startup validation that prompt files exist (fail fast with a clear error).
-8. [ ] Add graceful shutdown closing httpx clients and DB connections.
-9. [ ] Add request-ID middleware for tracing.
-10. [ ] Move CORS allowed origins to env config (no wildcard in prod).
-11. [ ] Enrich `/health` with model, provider, and mock-mode info.
-12. [ ] Add `/ready` and basic `/metrics` endpoints.
+1. [x] Implement `app/utils/logger.py` with structured logging (JSON + console) and levels from env.
+2. [x] Add `LOG_LEVEL`, `LOG_FORMAT` settings to `app/config.py`.
+3. [x] Implement `app/utils/timing.py` with a context manager/decorator for per-stage timings.
+4. [x] Expose per-stage timings in `SentenceResponse` (or a dedicated timings model).
+5. [x] Implement `app/api/dependencies.py` (`get_settings`, `get_agent`, `get_llm_client`).
+6. [x] Refactor `app/main.py` to use dependencies and a lifespan for startup/shutdown.
+7. [x] Add startup validation that prompt files exist (fail fast with a clear error).
+8. [x] Add graceful shutdown closing httpx clients and DB connections.
+9. [x] Add request-ID middleware for tracing.
+10. [x] Move CORS allowed origins to env config (no wildcard in prod).
+11. [x] Enrich `/health` with model, provider, and mock-mode info.
+12. [x] Add `/ready` and basic `/metrics` endpoints.
 
 ## Phase 2 — Core Agent Enhancements (13–24)
 

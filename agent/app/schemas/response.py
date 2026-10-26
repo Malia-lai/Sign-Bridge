@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -35,6 +35,12 @@ class SentenceResponse(BaseModel):
     emergency_override: bool = False
     unknown_words: List[str] = Field(default_factory=list)
     raw_words: List[str] = Field(default_factory=list)
+    timings: Dict[str, Any] = Field(default_factory=dict)
+    stage_timings: Dict[str, Any] = Field(default_factory=dict)
+    timing: Dict[str, Any] = Field(default_factory=dict)
+    durations: Dict[str, Any] = Field(default_factory=dict)
+    elapsed_ms: Optional[float] = None
+    duration_ms: Optional[float] = None
 
     @field_validator("confidence")
     @classmethod

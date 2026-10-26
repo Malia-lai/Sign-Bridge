@@ -17,6 +17,13 @@ class MistralProvider(BaseLLMProvider):
         self.temperature = settings.temperature if temperature is None else float(temperature)
         self.client = Mistral(api_key=self.api_key) if self.api_key else Mistral(api_key="")
         self.last_retry_count = 0
+        self._async_client = None
+        self._sync_client = None
+
+    def close(self):
+        # Mistral SDK client has no persistent httpx client to close in this version;
+        # keep method for parity with GeminiProvider.
+        return None
 
     def _retry_delay(self, exc, attempt):
         headers = getattr(exc, "headers", None)
