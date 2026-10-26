@@ -119,12 +119,12 @@ add persistence/feedback, and ship it.
 
 ## Phase 8 — WebSocket & Streaming (81–86)
 
-79. [ ] Implement WebSocket connection manager.
-80. [ ] Stream partial sentence updates.
-81. [ ] Add heartbeat/ping-pong.
-82. [ ] Document client reconnection handling.
-83. [ ] Add backpressure handling.
-84. [ ] Add WebSocket auth.
+79. [x] Implement WebSocket connection manager.
+80. [x] Stream partial sentence updates.
+81. [x] Add heartbeat/ping-pong.
+82. [x] Document client reconnection handling.
+83. [x] Add backpressure handling.
+84. [x] Add WebSocket auth.
 
 ## Phase 9 — Testing (87–94)
 

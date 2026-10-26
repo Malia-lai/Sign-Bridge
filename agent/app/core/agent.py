@@ -695,6 +695,36 @@ class Agent:
     async def process_words(self, words, **kwargs):
         return await self.process(SentenceRequest(words=list(words)))
 
+    async def process_stream(self, request, **kwargs):
+        """Async generator yielding partial updates and a final result."""
+        if isinstance(request, SentenceRequest):
+            req = request
+        elif isinstance(request, dict):
+            req = SentenceRequest(**request)
+        elif isinstance(request, (list, tuple)):
+            req = SentenceRequest(words=list(request))
+        else:
+            req = SentenceRequest(words=[])
+        words = req.normalized_words()
+        yield {"type": "partial", "data": {"status": "started", "words": words}}
+        result = await self.process(req)
+        # stream sentence tokens
+        tokens = (result.sentence or "").split()
+        so_far = []
+        for idx, token in enumerate(tokens):
+            so_far.append(token)
+            yield {
+                "type": "partial",
+                "data": {
+                    "status": "streaming",
+                    "index": idx,
+                    "token": token,
+                    "sentence": " ".join(so_far),
+                },
+            }
+            await asyncio.sleep(0)
+        yield {"type": "result", "data": result.model_dump()}
+
     def process_sync(self, request):
         return asyncio.get_event_loop().run_until_complete(self.process(request))
 
