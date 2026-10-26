@@ -128,14 +128,14 @@ add persistence/feedback, and ship it.
 
 ## Phase 9 — Testing (87–94)
 
-85. [ ] Implement `tests/conftest.py` with shared fixtures.
-86. [ ] Implement `tests/test_api.py` (integration tests).
-87. [ ] Implement `tests/test_feedback.py`.
-88. [ ] Add tests for buffer, timing, dependencies.
-89. [ ] Add tests for correction/history services.
-90. [ ] Add tests for DB repository.
-91. [ ] Add tests for WebSocket.
-92. [ ] Add coverage reporting (`pytest-cov`) with threshold.
+85. [x] Implement `tests/conftest.py` with shared fixtures.
+86. [x] Implement `tests/test_api.py` (integration tests).
+87. [x] Implement `tests/test_feedback.py`.
+88. [x] Add tests for buffer, timing, dependencies.
+89. [x] Add tests for correction/history services.
+90. [x] Add tests for DB repository.
+91. [x] Add tests for WebSocket.
+92. [x] Add coverage reporting (`pytest-cov`) with threshold.
 
 ## Phase 10 — Docs, Docker, Ops & Integration (95–100)
 
