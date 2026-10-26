@@ -1,0 +1,3 @@
+.env
+evaluation/results/*.json
+__pycache__/
