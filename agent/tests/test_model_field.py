@@ -1,9 +1,8 @@
 import asyncio
 import contextlib
-import json
 import io
+import json
 import os
-from pathlib import Path
 
 import evaluation.run_eval as rev
 
@@ -32,7 +31,10 @@ def test_model_field_mock(tmp_path, monkeypatch):
     assert data["results"][0]["model"] == "mock"
     assert data["summary"]["model"] == "mock"
     assert set(data["results"][0]["response"]) == {
-        "sentence", "intent", "confidence", "alternatives"
+        "sentence",
+        "intent",
+        "confidence",
+        "alternatives",
     }
 
 

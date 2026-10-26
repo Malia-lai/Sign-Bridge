@@ -1,6 +1,6 @@
 """Provider registry/factory for LLM providers."""
 
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any, Callable, Dict, Optional
 
 from .base_provider import BaseLLMProvider
 from .gemini_provider import GeminiProvider
@@ -17,6 +17,7 @@ def register_provider(name: str, factory: Any) -> None:
         # treat as class
         def _factory(**kwargs):
             return factory(**kwargs)
+
         PROVIDER_REGISTRY[key] = _factory
 
 
@@ -48,8 +49,10 @@ def make_provider(name: str, **kwargs: Any) -> BaseLLMProvider:
 def _mistral_factory(**kwargs):
     return MistralProvider(**kwargs)
 
+
 def _gemini_factory(**kwargs):
     return GeminiProvider(**kwargs)
+
 
 register_provider("mistral", _mistral_factory)
 register_provider("gemini", _gemini_factory)
@@ -64,7 +67,9 @@ try:
         def __init__(self, api_key=None, model=None, timeout=None, transport=None, **kwargs):
             from app.config import settings
 
-            self.api_key = api_key if api_key is not None else getattr(settings, "openai_api_key", "")
+            self.api_key = (
+                api_key if api_key is not None else getattr(settings, "openai_api_key", "")
+            )
             self.model = model or getattr(settings, "openai_model", "gpt-4o-mini")
             self.timeout = timeout if timeout is not None else getattr(settings, "timeout", 30)
             self.transport = transport

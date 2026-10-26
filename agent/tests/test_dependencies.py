@@ -2,8 +2,8 @@ import os
 
 os.environ.setdefault("MOCK_MODE", "true")
 
+from app.api.dependencies import get_agent, get_llm_client, get_settings, validate_prompt_files
 from fastapi import Request
-from app.api.dependencies import get_settings, get_agent, get_llm_client, validate_prompt_files
 
 
 def test_get_settings():

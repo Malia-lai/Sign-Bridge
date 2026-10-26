@@ -6,7 +6,12 @@ from app.schemas.request import SentenceRequest
 
 class OKClient:
     async def generate_json(self, *a, **k):
-        return {"sentence": "I need help.", "intent": "request", "confidence": 0.9, "alternatives": []}
+        return {
+            "sentence": "I need help.",
+            "intent": "request",
+            "confidence": 0.9,
+            "alternatives": [],
+        }
 
     async def generate(self, *a, **k):
         return '{"sentence":"I need help.","intent":"request","confidence":0.9,"alternatives":[]}'

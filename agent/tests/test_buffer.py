@@ -44,7 +44,7 @@ def test_dedupe_with_window():
 
 
 def test_buffer_aliases_and_props():
-    from app.core.buffer import Buffer, WordBuffer, SlidingBuffer
+    from app.core.buffer import Buffer
 
     b = Buffer(size=4)
     b.push("z")

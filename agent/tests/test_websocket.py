@@ -1,9 +1,7 @@
-import os
 import asyncio
+import os
 
 os.environ.setdefault("MOCK_MODE", "true")
-
-import pytest
 
 
 def test_ws_ping_pong(client):
@@ -56,7 +54,6 @@ def test_ws_manager():
     m = ConnectionManager()
     assert m.count() == 0
     # send_json to unknown returns False
-    import asyncio
 
     class Dummy:
         pass

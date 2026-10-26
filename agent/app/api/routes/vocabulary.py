@@ -65,10 +65,12 @@ async def add_vocabulary(payload: VocabAddRequest, request: Request):
         svc.agent = agent
     if payload.word is None and not payload.words:
         raise HTTPException(status_code=422, detail="word or words required")
-    added = svc.add(word=payload.word, words=payload.words, tags=payload.tags, metadata=payload.metadata)
+    added = svc.add(
+        word=payload.word, words=payload.words, tags=payload.tags, metadata=payload.metadata
+    )
     if agent is not None:
         try:
-            for w in (added if isinstance(added, list) else [added]):
+            for w in added if isinstance(added, list) else [added]:
                 agent.add_vocabulary_word(w, tags=payload.tags, metadata=payload.metadata)
         except Exception:
             pass

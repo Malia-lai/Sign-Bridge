@@ -25,10 +25,29 @@ class JSONFormatter(logging.Formatter):
         # merge any extra fields attached to the record
         for key, value in getattr(record, "__dict__", {}).items():
             if key.startswith("_") or key in {
-                "args", "asctime", "created", "exc_info", "exc_text", "filename",
-                "funcName", "levelname", "levelno", "lineno", "module", "msecs",
-                "message", "msg", "name", "pathname", "process", "processName",
-                "relativeCreated", "stack_info", "thread", "threadName", "taskName",
+                "args",
+                "asctime",
+                "created",
+                "exc_info",
+                "exc_text",
+                "filename",
+                "funcName",
+                "levelname",
+                "levelno",
+                "lineno",
+                "module",
+                "msecs",
+                "message",
+                "msg",
+                "name",
+                "pathname",
+                "process",
+                "processName",
+                "relativeCreated",
+                "stack_info",
+                "thread",
+                "threadName",
+                "taskName",
             }:
                 continue
             if key not in payload:
@@ -44,7 +63,11 @@ class ConsoleFormatter(logging.Formatter):
 
 
 def _resolve_level(level: Optional[str] = None) -> int:
-    value = (level if level is not None else getattr(settings, "log_level", os.getenv("LOG_LEVEL", "INFO"))).upper()
+    value = (
+        level
+        if level is not None
+        else getattr(settings, "log_level", os.getenv("LOG_LEVEL", "INFO"))
+    ).upper()
     # also allow env override at call time
     env_level = os.getenv("LOG_LEVEL")
     if env_level:
@@ -53,7 +76,11 @@ def _resolve_level(level: Optional[str] = None) -> int:
 
 
 def _resolve_format(fmt: Optional[str] = None) -> str:
-    value = (fmt if fmt is not None else getattr(settings, "log_format", os.getenv("LOG_FORMAT", "console"))).lower()
+    value = (
+        fmt
+        if fmt is not None
+        else getattr(settings, "log_format", os.getenv("LOG_FORMAT", "console"))
+    ).lower()
     env_fmt = os.getenv("LOG_FORMAT")
     if env_fmt:
         value = env_fmt.lower()

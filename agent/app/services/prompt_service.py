@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import random
 import threading
 from datetime import datetime, timezone
@@ -47,7 +46,9 @@ class PromptService:
         self.ab_enabled = bool(
             getattr(settings, "prompt_ab_enabled", False) if ab_enabled is None else ab_enabled
         )
-        variants_raw = variants if variants is not None else getattr(settings, "prompt_variants", "A,B")
+        variants_raw = (
+            variants if variants is not None else getattr(settings, "prompt_variants", "A,B")
+        )
         if isinstance(variants_raw, str):
             self.variants = [v.strip() for v in variants_raw.split(",") if v.strip()]
         else:
@@ -71,12 +72,17 @@ class PromptService:
                     initial = None
         if initial is None:
             try:
-                from app.core.agent import load_system_prompt, PROMPTS_DIR
+                from app.core.agent import load_system_prompt
 
                 initial = load_system_prompt()
             except Exception:
                 initial = ""
-        self.add_template("default", initial or "", version="default", variant=self.variants[0] if self.variants else None)
+        self.add_template(
+            "default",
+            initial or "",
+            version="default",
+            variant=self.variants[0] if self.variants else None,
+        )
 
         # load additional templates from directory
         d = templates_dir or getattr(settings, "prompt_templates_dir", "")
@@ -86,7 +92,16 @@ class PromptService:
     # ------------------------------------------------------------------ #
     # Template CRUD
     # ------------------------------------------------------------------ #
-    def add_template(self, name: str, template: str, version: Optional[str] = None, variant: Optional[str] = None, weight: float = 1.0, metadata: Optional[Dict[str, Any]] = None, **kwargs: Any) -> PromptTemplate:
+    def add_template(
+        self,
+        name: str,
+        template: str,
+        version: Optional[str] = None,
+        variant: Optional[str] = None,
+        weight: float = 1.0,
+        metadata: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> PromptTemplate:
         with self._lock:
             pt = PromptTemplate(
                 name=name,
@@ -103,7 +118,12 @@ class PromptService:
         # set_template(name, template) or set_template(template=..., name=...)
         name = kwargs.get("name", kwargs.get("key"))
         template = kwargs.get("template", kwargs.get("content", kwargs.get("text")))
-        if name is None and len(args) >= 1 and isinstance(args[0], str) and (len(args) == 1 or not isinstance(args[1], str)):
+        if (
+            name is None
+            and len(args) >= 1
+            and isinstance(args[0], str)
+            and (len(args) == 1 or not isinstance(args[1], str))
+        ):
             # could be set_template(template) for default
             if len(args) == 1:
                 name = self.active_name
@@ -118,9 +138,18 @@ class PromptService:
             name = self.active_name
         if template is None:
             template = ""
-        return self.add_template(name, template, version=kwargs.get("version"), variant=kwargs.get("variant"), weight=kwargs.get("weight", 1.0), metadata=kwargs.get("metadata"))
+        return self.add_template(
+            name,
+            template,
+            version=kwargs.get("version"),
+            variant=kwargs.get("variant"),
+            weight=kwargs.get("weight", 1.0),
+            metadata=kwargs.get("metadata"),
+        )
 
-    def get_template(self, name: Optional[str] = None, variant: Optional[str] = None) -> Optional[PromptTemplate]:
+    def get_template(
+        self, name: Optional[str] = None, variant: Optional[str] = None
+    ) -> Optional[PromptTemplate]:
         with self._lock:
             if name is None:
                 name = self.active_name
@@ -247,7 +276,14 @@ class PromptService:
     # ------------------------------------------------------------------ #
     # Rendering helpers
     # ------------------------------------------------------------------ #
-    def render(self, name: Optional[str] = None, language: Optional[str] = None, vocabulary: Any = None, examples: Any = None, **kwargs: Any) -> str:
+    def render(
+        self,
+        name: Optional[str] = None,
+        language: Optional[str] = None,
+        vocabulary: Any = None,
+        examples: Any = None,
+        **kwargs: Any,
+    ) -> str:
         pt = self.get_template(name)
         template = pt.template if pt else ""
         # simple placeholder replacement
@@ -256,7 +292,9 @@ class PromptService:
             text = text.replace("{output_language}", str(language))
         return text
 
-    def get_text(self, name: Optional[str] = None, variant: Optional[str] = None, **kwargs: Any) -> str:
+    def get_text(
+        self, name: Optional[str] = None, variant: Optional[str] = None, **kwargs: Any
+    ) -> str:
         pt = self.get_template(name, variant=variant)
         return pt.template if pt else ""
 

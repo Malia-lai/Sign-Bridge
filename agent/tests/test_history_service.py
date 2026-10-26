@@ -23,6 +23,7 @@ def test_history_from_result(agent):
     async def run():
         nonlocal res
         res = await agent.process(["me", "water", "want"])
+
     asyncio.get_event_loop().run_until_complete(run())
     rec = svc.add(result=res, language="English")
     assert rec.sentence == res.sentence

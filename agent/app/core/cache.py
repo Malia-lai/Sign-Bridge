@@ -1,7 +1,7 @@
 """Simple LRU cache for sentence results."""
 
 from collections import OrderedDict
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Dict, Optional
 
 
 class LRUCache:
@@ -47,17 +47,6 @@ class LRUCache:
             "misses": self.misses,
             "evictions": self.evictions,
         }
-
-    def cache_info(self):
-        # mimic functools.lru_cache cache_info namedtuple-ish
-        class Info:
-            pass
-        info = Info()
-        info.hits = self.hits
-        info.misses = self.misses
-        info.maxsize = self.capacity
-        info.currsize = len(self._store)
-        return info
 
     # aliases
     def info(self):

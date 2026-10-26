@@ -17,7 +17,6 @@ os.environ.setdefault("RATE_LIMIT_PER_MINUTE", "1000")
 os.environ.setdefault("API_KEY", "")
 
 import asyncio
-from typing import Any, AsyncGenerator
 
 import pytest
 
@@ -105,9 +104,8 @@ def real_agent(settings):
 
 @pytest.fixture
 def client():
-    from fastapi.testclient import TestClient
-
     from app.main import app
+    from fastapi.testclient import TestClient
 
     with TestClient(app) as c:
         yield c
@@ -115,9 +113,8 @@ def client():
 
 @pytest.fixture
 async def async_client():
-    from httpx import ASGITransport, AsyncClient
-
     from app.main import app
+    from httpx import ASGITransport, AsyncClient
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
@@ -126,7 +123,7 @@ async def async_client():
 
 @pytest.fixture
 async def repository(tmp_path):
-    from app.db.database import close_db, configure_engine, init_db, reset_database_state
+    from app.db.database import close_db, init_db, reset_database_state
     from app.db.repository import Repository
 
     db_path = tmp_path / "test.db"

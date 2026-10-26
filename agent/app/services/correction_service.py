@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import threading
-import time
-import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -132,9 +130,11 @@ class CorrectionService:
             )
             self._items.append(record)
             if len(self._items) > self.max_items:
-                self._items = self._items[-self.max_items:]
+                self._items = self._items[-self.max_items :]
             if original_sentence and corrected_sentence:
-                self._correction_map[str(original_sentence).strip()] = str(corrected_sentence).strip()
+                self._correction_map[str(original_sentence).strip()] = str(
+                    corrected_sentence
+                ).strip()
 
         # learning loop
         if self.learning_enabled:
@@ -246,7 +246,9 @@ class CorrectionService:
                     return r
         return None
 
-    def list(self, limit: Optional[int] = None, offset: int = 0, **kwargs: Any) -> List[CorrectionRecord]:
+    def list(
+        self, limit: Optional[int] = None, offset: int = 0, **kwargs: Any
+    ) -> List[CorrectionRecord]:
         with self._lock:
             items = list(self._items)
         start = max(0, int(offset or 0))
@@ -278,7 +280,9 @@ class CorrectionService:
     # ------------------------------------------------------------------ #
     # "Did you mean?" suggestions
     # ------------------------------------------------------------------ #
-    def did_you_mean(self, word: Any, vocabulary: Any = None, n: int = 3, cutoff: float = 0.6, **kwargs: Any) -> List[str]:
+    def did_you_mean(
+        self, word: Any, vocabulary: Any = None, n: int = 3, cutoff: float = 0.6, **kwargs: Any
+    ) -> List[str]:
         import difflib
 
         vocab = vocabulary if vocabulary is not None else self.vocabulary
@@ -295,7 +299,9 @@ class CorrectionService:
         if not words and isinstance(vocab, (list, tuple, set)):
             words = [str(x) for x in vocab]
         target = str(word).strip()
-        matches = difflib.get_close_matches(target, words, n=int(n or 3), cutoff=float(cutoff or 0.6))
+        matches = difflib.get_close_matches(
+            target, words, n=int(n or 3), cutoff=float(cutoff or 0.6)
+        )
         return matches
 
     def suggest(self, *args, **kwargs):
@@ -305,7 +311,16 @@ class CorrectionService:
             word = args[0]
         vocabulary = kwargs.get("vocabulary")
         n = kwargs.get("n", kwargs.get("limit", 3))
-        return self.did_you_mean(word, vocabulary=vocabulary, n=n, **{k: v for k, v in kwargs.items() if k not in {"word", "text", "value", "vocabulary", "n", "limit"}})
+        return self.did_you_mean(
+            word,
+            vocabulary=vocabulary,
+            n=n,
+            **{
+                k: v
+                for k, v in kwargs.items()
+                if k not in {"word", "text", "value", "vocabulary", "n", "limit"}
+            },
+        )
 
     def suggestions(self, *args, **kwargs):
         return self.suggest(*args, **kwargs)
@@ -324,7 +339,9 @@ class CorrectionService:
         count = 0
         for item in items or []:
             try:
-                self.record(**(item if isinstance(item, dict) else {"corrected_sentence": str(item)}))
+                self.record(
+                    **(item if isinstance(item, dict) else {"corrected_sentence": str(item)})
+                )
                 count += 1
             except Exception:
                 continue

@@ -1,6 +1,6 @@
 """Prompt template endpoints."""
 
-from typing import Any, Optional
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
@@ -48,15 +48,16 @@ def _agent(request: Optional[Request] = None):
 async def list_prompts(request: Request):
     svc = _service(request)
     items = svc.list_templates()
-    return {"items": [t.model_dump() if hasattr(t, "model_dump") else t for t in items], "active": svc.active_name}
+    return {
+        "items": [t.model_dump() if hasattr(t, "model_dump") else t for t in items],
+        "active": svc.active_name,
+    }
 
 
 @router.get("/prompts/export")
 async def export_prompts(request: Request):
     svc = _service(request)
     return {"items": svc.export()}
-
-
 
 
 @router.get("/prompts/{name}")
@@ -74,12 +75,21 @@ async def create_prompt(payload: PromptCreateRequest, request: Request):
     agent = _agent(request)
     name = payload.name or "default"
     template = payload.template or payload.content or payload.text or ""
-    pt = svc.add_template(name, template, version=payload.version, variant=payload.variant, weight=payload.weight, metadata=payload.metadata)
+    pt = svc.add_template(
+        name,
+        template,
+        version=payload.version,
+        variant=payload.variant,
+        weight=payload.weight,
+        metadata=payload.metadata,
+    )
     if payload.activate:
         svc.activate(name)
         if agent is not None:
             try:
-                agent.set_system_prompt(template, name=name, version=payload.version, variant=payload.variant)
+                agent.set_system_prompt(
+                    template, name=name, version=payload.version, variant=payload.variant
+                )
             except Exception:
                 pass
     if agent is not None and getattr(svc, "agent", None) is None:
@@ -97,7 +107,9 @@ async def activate_prompt(payload: PromptActivateRequest, request: Request):
     pt = svc.get_template(payload.name)
     if agent is not None and pt is not None:
         try:
-            agent.set_system_prompt(pt.template, name=payload.name, version=pt.version, variant=pt.variant)
+            agent.set_system_prompt(
+                pt.template, name=payload.name, version=pt.version, variant=pt.variant
+            )
         except Exception:
             pass
     return {"status": "ok", "active": svc.active_name}

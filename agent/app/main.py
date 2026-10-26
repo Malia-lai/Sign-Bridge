@@ -2,11 +2,12 @@ import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi import HTTPException as _HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.openapi.utils import get_openapi
 
+from app.api import websocket as ws_routes
 from app.api.dependencies import get_settings, validate_prompt_files
 from app.api.middleware import (
     APIKeyMiddleware,
@@ -14,8 +15,7 @@ from app.api.middleware import (
     RequestIDMiddleware,
     RequestResponseLoggingMiddleware,
 )
-from app.api.routes import feedback, health, sentence, history, vocabulary, prompts
-from app.api import websocket as ws_routes
+from app.api.routes import feedback, health, history, prompts, sentence, vocabulary
 from app.core.agent import Agent
 from app.llm.client import LLMClient
 
@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     app.state.settings = settings
     # database
-    from app.db.database import init_db, close_db
+    from app.db.database import close_db, init_db
 
     app.state.db_engine = await init_db()
     app.state.db_session_factory = None
@@ -45,8 +45,8 @@ async def lifespan(app: FastAPI):
 
     from app.services.correction_service import get_correction_service
     from app.services.history_service import get_history_service
-    from app.services.vocabulary_service import get_vocabulary_service
     from app.services.prompt_service import get_prompt_service
+    from app.services.vocabulary_service import get_vocabulary_service
 
     app.state.history_service = get_history_service()
     app.state.correction_service = get_correction_service()
@@ -66,7 +66,13 @@ async def lifespan(app: FastAPI):
         feedback_service=app.state.feedback_service,
     )
     # sync service -> agent references
-    for svc in (app.state.history_service, app.state.correction_service, app.state.vocabulary_service, app.state.prompt_service, app.state.feedback_service):
+    for svc in (
+        app.state.history_service,
+        app.state.correction_service,
+        app.state.vocabulary_service,
+        app.state.prompt_service,
+        app.state.feedback_service,
+    ):
         try:
             svc.agent = app.state.agent
         except Exception:
@@ -83,7 +89,10 @@ async def lifespan(app: FastAPI):
         pass
     client = getattr(app.state, "llm_client", None)
     if client is not None:
-        for provider in (getattr(client, "provider", None), getattr(client, "fallback_provider", None)):
+        for provider in (
+            getattr(client, "provider", None),
+            getattr(client, "fallback_provider", None),
+        ):
             if provider is None:
                 continue
             close = getattr(provider, "close", None)
@@ -168,11 +177,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
-from fastapi import HTTPException as _HTTPException
-
 @app.exception_handler(_HTTPException)
 async def http_exception_handler(request: Request, exc: _HTTPException):
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

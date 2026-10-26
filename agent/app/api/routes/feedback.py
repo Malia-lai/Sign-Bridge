@@ -52,7 +52,11 @@ async def submit_feedback(payload: FeedbackCreate, request: Request = None) -> F
 
 
 @router.get("/feedback", tags=["feedback"])
-async def list_feedback(request: Request = None, limit: Optional[int] = Query(default=None), offset: int = Query(default=0)):
+async def list_feedback(
+    request: Request = None,
+    limit: Optional[int] = Query(default=None),
+    offset: int = Query(default=0),
+):
     svc = _service(request)
     items = svc.list(limit=limit, offset=offset)
     return [r.model_dump() if hasattr(r, "model_dump") else r for r in items]
@@ -114,6 +118,7 @@ async def feedback_suggest(payload: Dict[str, Any], request: Request = None):
     suggestions = svc.suggest(word, vocabulary=vocabulary, n=payload.get("n", 3))
     return {"word": word, "suggestions": suggestions}
 
+
 @router.get("/feedback/{item_id}", tags=["feedback"])
 async def get_feedback(item_id: int, request: Request = None):
     svc = _service(request)
@@ -130,5 +135,3 @@ async def delete_feedback(item_id: int, request: Request = None):
     if not ok:
         raise HTTPException(status_code=404, detail="feedback not found")
     return {"status": "ok", "deleted": item_id}
-
-

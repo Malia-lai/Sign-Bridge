@@ -7,18 +7,22 @@ from typing import Any, List, Optional
 from app.config import settings
 from app.core.buffer import SlidingWindowBuffer
 from app.core.cache import SentenceCache
+from app.core.confidence import (
+    aggregate_confidence,
+    detect_unknown,
+    ensure_alternatives,
+    vocabulary_words,
+)
 from app.core.confidence import below_threshold as below_threshold_helper
-from app.core.confidence import aggregate_confidence, detect_unknown, ensure_alternatives, vocabulary_words
 from app.core.fallback import build_fallback, detect_emergency
 from app.llm.base_provider import classify_error
-from app.services.correction_service import CorrectionService
-from app.services.history_service import HistoryService
-from app.services.vocabulary_service import VocabularyService
-from app.services.prompt_service import PromptService
 from app.llm.client import LLMClient, _extract_json
-from app.utils.timing import TimingContext
 from app.schemas.request import SentenceRequest
 from app.schemas.response import LLMOutput, SentenceResponse
+from app.services.correction_service import CorrectionService
+from app.services.history_service import HistoryService
+from app.services.prompt_service import PromptService
+from app.services.vocabulary_service import VocabularyService
 
 PROMPTS_DIR = Path(__file__).resolve().parents[1] / "prompts"
 
@@ -73,7 +77,9 @@ class Agent:
         self.vocabulary = vocabulary if vocabulary is not None else load_vocabulary()
         self.examples = examples if examples is not None else load_examples()
         self.mock_mode = settings.mock_mode if mock_mode is None else bool(mock_mode)
-        self.llm_client = llm_client if llm_client is not None else (None if self.mock_mode else LLMClient())
+        self.llm_client = (
+            llm_client if llm_client is not None else (None if self.mock_mode else LLMClient())
+        )
         self._system_template = system_prompt if system_prompt is not None else load_system_prompt()
         self.last_raw_output = None
 
@@ -106,10 +112,18 @@ class Agent:
 
         self.timeout = timeout  # None -> settings/request
         self.emergency_keywords = emergency_keywords
-        self.fallback_to_mock = getattr(settings, "fallback_to_mock", True) if fallback_to_mock is None else bool(fallback_to_mock)
+        self.fallback_to_mock = (
+            getattr(settings, "fallback_to_mock", True)
+            if fallback_to_mock is None
+            else bool(fallback_to_mock)
+        )
 
         # services
-        self.learning_enabled = getattr(settings, "correction_learning", True) if learning_enabled is None else bool(learning_enabled)
+        self.learning_enabled = (
+            getattr(settings, "correction_learning", True)
+            if learning_enabled is None
+            else bool(learning_enabled)
+        )
         self.record_history = True if record_history is None else bool(record_history)
         self.prompt_variant = prompt_variant
         self.ab_testing = ab_testing
@@ -118,7 +132,10 @@ class Agent:
             self.vocabulary_service = vocabulary_service
         else:
             self.vocabulary_service = VocabularyService(agent=self, vocabulary=self.vocabulary)
-        if self.vocabulary_service is not None and getattr(self.vocabulary_service, "agent", None) is None:
+        if (
+            self.vocabulary_service is not None
+            and getattr(self.vocabulary_service, "agent", None) is None
+        ):
             self.vocabulary_service.agent = self
         # keep vocabulary in sync
         try:
@@ -129,16 +146,26 @@ class Agent:
         if correction_service is not None:
             self.correction_service = correction_service
         else:
-            self.correction_service = CorrectionService(agent=self, vocabulary=self.vocabulary, learning_enabled=self.learning_enabled)
-        if self.correction_service is not None and getattr(self.correction_service, "agent", None) is None:
+            self.correction_service = CorrectionService(
+                agent=self, vocabulary=self.vocabulary, learning_enabled=self.learning_enabled
+            )
+        if (
+            self.correction_service is not None
+            and getattr(self.correction_service, "agent", None) is None
+        ):
             self.correction_service.agent = self
-        if self.correction_service is not None and getattr(self.correction_service, "vocabulary", None) is None:
+        if (
+            self.correction_service is not None
+            and getattr(self.correction_service, "vocabulary", None) is None
+        ):
             self.correction_service.vocabulary = self.vocabulary
 
         if history_service is not None:
             self.history_service = history_service
         else:
-            self.history_service = HistoryService(agent=self, max_items=getattr(settings, "history_size", 1000))
+            self.history_service = HistoryService(
+                agent=self, max_items=getattr(settings, "history_size", 1000)
+            )
 
         if prompt_service is not None:
             self.prompt_service = prompt_service
@@ -164,7 +191,15 @@ class Agent:
     # ------------------------------------------------------------------ #
     # Learning / management helpers
     # ------------------------------------------------------------------ #
-    def add_example(self, words: Any = None, sentence: Any = None, intent: str = "statement", alternatives: Any = None, confidence: Any = None, **kwargs: Any) -> None:
+    def add_example(
+        self,
+        words: Any = None,
+        sentence: Any = None,
+        intent: str = "statement",
+        alternatives: Any = None,
+        confidence: Any = None,
+        **kwargs: Any,
+    ) -> None:
         if sentence is None and isinstance(words, dict):
             sentence = words.get("sentence")
             words = words.get("words", words.get("input"))
@@ -179,25 +214,40 @@ class Agent:
             alternatives = kwargs.get("alternatives", [])
         try:
             self.examples = list(self.examples or [])
-            self.examples.append({
-                "words": list(words or []),
-                "sentence": sentence,
-                "intent": intent,
-                "alternatives": list(alternatives or []),
-            })
+            self.examples.append(
+                {
+                    "words": list(words or []),
+                    "sentence": sentence,
+                    "intent": intent,
+                    "alternatives": list(alternatives or []),
+                }
+            )
         except Exception:
             pass
 
-    def add_vocabulary_word(self, word: Any, tags: Any = None, metadata: Any = None, **kwargs: Any) -> None:
+    def add_vocabulary_word(
+        self, word: Any, tags: Any = None, metadata: Any = None, **kwargs: Any
+    ) -> None:
         try:
             if self.vocabulary_service is not None:
                 self.vocabulary_service.add(word=word, tags=tags, metadata=metadata, **kwargs)
                 self.vocabulary = self.vocabulary_service.get_vocabulary()
             else:
                 # fallback direct
-                if isinstance(self.vocabulary, dict) and isinstance(self.vocabulary.get("words"), list):
-                    if str(word).lower() not in {str(x.get("word", x) if isinstance(x, dict) else x).lower() for x in self.vocabulary["words"]}:
-                        self.vocabulary["words"].append({"word": str(word).strip(), "tags": list(tags or []), "metadata": dict(metadata or {})})
+                if isinstance(self.vocabulary, dict) and isinstance(
+                    self.vocabulary.get("words"), list
+                ):
+                    if str(word).lower() not in {
+                        str(x.get("word", x) if isinstance(x, dict) else x).lower()
+                        for x in self.vocabulary["words"]
+                    }:
+                        self.vocabulary["words"].append(
+                            {
+                                "word": str(word).strip(),
+                                "tags": list(tags or []),
+                                "metadata": dict(metadata or {}),
+                            }
+                        )
         except Exception:
             pass
 
@@ -227,12 +277,20 @@ class Agent:
     def get_vocabulary(self) -> Any:
         return self.vocabulary
 
-    def set_system_prompt(self, template: Any, name: str = "default", version: Optional[str] = None, variant: Optional[str] = None) -> None:
+    def set_system_prompt(
+        self,
+        template: Any,
+        name: str = "default",
+        version: Optional[str] = None,
+        variant: Optional[str] = None,
+    ) -> None:
         if isinstance(template, str):
             self._system_template = template
         if self.prompt_service is not None:
             try:
-                self.prompt_service.add_template(name, str(template), version=version, variant=variant)
+                self.prompt_service.add_template(
+                    name, str(template), version=version, variant=variant
+                )
                 self.prompt_service.activate(name)
             except Exception:
                 pass
@@ -279,18 +337,28 @@ class Agent:
     def _unknown(self, words: List[str]) -> List[str]:
         return detect_unknown(words, self.vocabulary)
 
-    def _build_system_prompt(self, output_language: Optional[str] = None, variant: Optional[str] = None) -> str:
+    def _build_system_prompt(
+        self, output_language: Optional[str] = None, variant: Optional[str] = None
+    ) -> str:
         lang = output_language or settings.output_language
         variant = variant if variant is not None else self.prompt_variant
         # A/B variant selection
-        if self.ab_testing and self.prompt_service is not None and getattr(self.prompt_service, "ab_enabled", False):
+        if (
+            self.ab_testing
+            and self.prompt_service is not None
+            and getattr(self.prompt_service, "ab_enabled", False)
+        ):
             try:
-                variant = self.prompt_service.select_variant(key=self.prompt_variant, context=variant)
+                variant = self.prompt_service.select_variant(
+                    key=self.prompt_variant, context=variant
+                )
             except Exception:
                 pass
         if self.prompt_service is not None:
             try:
-                base = self.prompt_service.get_text(variant=variant) or self.prompt_service.get_text()
+                base = (
+                    self.prompt_service.get_text(variant=variant) or self.prompt_service.get_text()
+                )
             except Exception:
                 base = None
         else:
@@ -313,16 +381,26 @@ class Agent:
         try:
             corr = getattr(self, "correction_service", None)
             if corr is not None:
-                for rec in (corr.all() if hasattr(corr, "all") else []):
+                for rec in corr.all() if hasattr(corr, "all") else []:
                     if rec.corrected_sentence:
                         ws = rec.words or []
-                        out = {"sentence": rec.corrected_sentence, "intent": "statement", "alternatives": []}
+                        out = {
+                            "sentence": rec.corrected_sentence,
+                            "intent": "statement",
+                            "alternatives": [],
+                        }
                         system += f"\nWords: {ws}\n{json.dumps(out)}"
         except Exception:
             pass
         return system
 
-    def _build_user_prompt(self, words: List[str], confidences: List[float], alternatives: List[List[str]], unknown: List[str]) -> str:
+    def _build_user_prompt(
+        self,
+        words: List[str],
+        confidences: List[float],
+        alternatives: List[List[str]],
+        unknown: List[str],
+    ) -> str:
         payload = {"words": words}
         if any(c != 1.0 for c in confidences):
             payload["confidences"] = confidences
@@ -332,7 +410,9 @@ class Agent:
             payload["unknown_words"] = unknown
         return json.dumps(payload)
 
-    def _mock(self, words: List[str], unknown: List[str], confidences: List[float]) -> SentenceResponse:
+    def _mock(
+        self, words: List[str], unknown: List[str], confidences: List[float]
+    ) -> SentenceResponse:
         sentence = " ".join(words).strip()
         if sentence:
             sentence = sentence[0].upper() + sentence[1:]
@@ -401,7 +481,12 @@ class Agent:
             prev = s
 
         # buffer-level dedup: drop leading word if it repeats last buffered word
-        if self.buffer is not None and deduped_words and self.buffer.get() and deduped_words[0] == self.buffer.get()[-1]:
+        if (
+            self.buffer is not None
+            and deduped_words
+            and self.buffer.get()
+            and deduped_words[0] == self.buffer.get()[-1]
+        ):
             deduped_words = deduped_words[1:]
             deduped_conf = deduped_conf[1:]
             deduped_alts = deduped_alts[1:]
@@ -432,7 +517,11 @@ class Agent:
             cached_resp = self.cache.get(cache_key)
             if cached_resp is not None:
                 try:
-                    resp_copy = SentenceResponse(**cached_resp.model_dump()) if hasattr(cached_resp, "model_dump") else SentenceResponse(**cached_resp)
+                    resp_copy = (
+                        SentenceResponse(**cached_resp.model_dump())
+                        if hasattr(cached_resp, "model_dump")
+                        else SentenceResponse(**cached_resp)
+                    )
                 except Exception:
                     resp_copy = cached_resp
                 resp_copy.cached = True
@@ -444,7 +533,9 @@ class Agent:
         t_total = time.perf_counter()
 
         if not words:
-            resp = build_fallback(words, unknown_words=unknown, confidence=0.1, fallback_reason="empty_input")
+            resp = build_fallback(
+                words, unknown_words=unknown, confidence=0.1, fallback_reason="empty_input"
+            )
             self._finalize_timings(resp, timings, t_total)
             self._maybe_cache(cache_key, resp)
             if self.buffer is not None:
@@ -466,7 +557,9 @@ class Agent:
                 # combine confidence with word aggregation
                 resp.confidence = min(resp.confidence, word_agg) if confidences else resp.confidence
                 # emergency detection
-                if detect_emergency(words, self.vocabulary, emergency_keywords=self.emergency_keywords):
+                if detect_emergency(
+                    words, self.vocabulary, emergency_keywords=self.emergency_keywords
+                ):
                     if resp.intent != "emergency":
                         resp.intent = "emergency"
                         resp.intent_overridden = True
@@ -484,7 +577,10 @@ class Agent:
             system = self._build_system_prompt(language, variant=req_prompt_variant)
             user = self._build_user_prompt(words, confidences, alts, unknown)
             if strict:
-                system = system + "\n\nIMPORTANT: Return ONLY valid JSON matching the required schema. No markdown, no extra text."
+                system = (
+                    system
+                    + "\n\nIMPORTANT: Return ONLY valid JSON matching the required schema. No markdown, no extra text."
+                )
                 user = user + "\nReturn strictly valid JSON."
             try:
                 t0 = time.perf_counter()
@@ -506,7 +602,9 @@ class Agent:
                     unknown_words=unknown,
                     raw_words=list(words),
                 )
-                if detect_emergency(words, self.vocabulary, emergency_keywords=self.emergency_keywords):
+                if detect_emergency(
+                    words, self.vocabulary, emergency_keywords=self.emergency_keywords
+                ):
                     resp.intent = "emergency"
                     resp.intent_overridden = True
                     resp.overridden = True
@@ -552,7 +650,9 @@ class Agent:
         if self.fallback_to_mock and not self.mock_mode:
             self.mock_mode = True
             self.llm_client = None
-            emergency = detect_emergency(words, self.vocabulary, emergency_keywords=self.emergency_keywords)
+            emergency = detect_emergency(
+                words, self.vocabulary, emergency_keywords=self.emergency_keywords
+            )
             resp = self._mock(words, unknown, confidences)
             self.last_raw_output = resp.sentence
             if emergency:
@@ -647,7 +747,9 @@ class Agent:
         try:
             fs = getattr(self, "feedback_service", None)
             if fs is not None and hasattr(fs, "calibrate_confidence"):
-                resp.confidence = fs.calibrate_confidence(resp.confidence, words=list(getattr(resp, "raw_words", []) or []))
+                resp.confidence = fs.calibrate_confidence(
+                    resp.confidence, words=list(getattr(resp, "raw_words", []) or [])
+                )
         except Exception:
             pass
         # "did you mean?" suggestions for unknown words

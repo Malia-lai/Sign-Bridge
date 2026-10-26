@@ -2,7 +2,10 @@ import os
 
 os.environ.setdefault("MOCK_MODE", "true")
 
-from app.services.feedback_service import FeedbackService, get_feedback_service, reset_feedback_service
+from app.services.feedback_service import (
+    get_feedback_service,
+    reset_feedback_service,
+)
 
 
 def test_feedback_record_and_list():

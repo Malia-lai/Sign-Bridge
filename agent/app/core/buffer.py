@@ -1,13 +1,15 @@
 """Sliding window buffer of recent words for the agent."""
 
-from collections import deque, OrderedDict
+from collections import deque
 from typing import Any, Deque, Iterable, List, Optional
 
 
 class SlidingWindowBuffer:
     """Keep the most recent N words; drop older ones."""
 
-    def __init__(self, size: int = 10, capacity: Optional[int] = None, window_size: Optional[int] = None):
+    def __init__(
+        self, size: int = 10, capacity: Optional[int] = None, window_size: Optional[int] = None
+    ):
         if window_size is not None:
             size = window_size
         if capacity is not None:
@@ -50,7 +52,7 @@ class SlidingWindowBuffer:
         items = list(self._items)
         if n is None:
             return items
-        return items[-int(n):]
+        return items[-int(n) :]
 
     def window(self) -> List[str]:
         return self.get()

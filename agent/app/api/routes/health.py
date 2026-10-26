@@ -1,11 +1,10 @@
 import time
-from typing import Any, Dict
+from typing import Dict
 
 from fastapi import APIRouter, Request
 
 from app.api.dependencies import get_settings
 from app.config import settings
-from app.core.agent import Agent
 
 router = APIRouter()
 

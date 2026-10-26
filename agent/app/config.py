@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -21,7 +20,9 @@ def _env(*names: str, default: str = "") -> str:
 class Settings:
     def __init__(self) -> None:
         self.output_language = _env("OUTPUT_LANGUAGE", "OUTPUT_LANG", "LANGUAGE", default="English")
-        self.model_name = _env("MODEL_NAME", "LLM_MODEL", "MISTRAL_MODEL", default="mistral-small-latest")
+        self.model_name = _env(
+            "MODEL_NAME", "LLM_MODEL", "MISTRAL_MODEL", default="mistral-small-latest"
+        )
         self.timeout = float(_env("TIMEOUT", "LLM_TIMEOUT", "REQUEST_TIMEOUT", default="30"))
         self.confidence_threshold = float(_env("CONFIDENCE_THRESHOLD", "CONFIDENCE", default="0.7"))
         self.mock_mode = _bool(_env("MOCK_MODE", default="false"))
@@ -37,13 +38,17 @@ class Settings:
         self.fallback_provider = _env("FALLBACK_PROVIDER", default="").lower()
         self.api_key = _env("API_KEY", "AGENT_API_KEY", default="")
         self.debug = _bool(_env("DEBUG", default="false"))
-        self.rate_limit_per_minute = int(_env("RATE_LIMIT_PER_MINUTE", "IP_RATE_LIMIT", default="60"))
+        self.rate_limit_per_minute = int(
+            _env("RATE_LIMIT_PER_MINUTE", "IP_RATE_LIMIT", default="60")
+        )
         self.max_words = int(_env("MAX_WORDS", "MAX_WORD_COUNT", default="100"))
         self.buffer_size = int(_env("BUFFER_SIZE", "WORD_BUFFER_SIZE", default="10"))
         self.cache_size = int(_env("CACHE_SIZE", "SENTENCE_CACHE_SIZE", default="128"))
         self.agent_retries = int(_env("AGENT_RETRIES", "AGENT_MAX_RETRIES", default="2"))
         self.fallback_to_mock = _bool(_env("FALLBACK_TO_MOCK", default="true"))
-        self.emergency_keywords = _env("EMERGENCY_KEYWORDS", default="help,pain,danger,emergency,urgent,sos")
+        self.emergency_keywords = _env(
+            "EMERGENCY_KEYWORDS", default="help,pain,danger,emergency,urgent,sos"
+        )
         self.supported_languages = _env("SUPPORTED_LANGUAGES", default="")
         self.history_size = int(_env("HISTORY_SIZE", "MAX_HISTORY", default="1000"))
         self.vocabulary_path = _env("VOCABULARY_PATH", "VOCAB_PATH", default="")
@@ -51,7 +56,9 @@ class Settings:
         self.prompt_templates_dir = _env("PROMPT_TEMPLATES_DIR", default="")
         self.prompt_ab_enabled = _bool(_env("PROMPT_AB_ENABLED", default="false"))
         self.prompt_variants = _env("PROMPT_VARIANTS", default="A,B")
-        self.correction_learning = _bool(_env("CORRECTION_LEARNING", "LEARN_FROM_CORRECTIONS", default="true"))
+        self.correction_learning = _bool(
+            _env("CORRECTION_LEARNING", "LEARN_FROM_CORRECTIONS", default="true")
+        )
         self.database_url = _env("DATABASE_URL", "DB_URL", "POSTGRES_URL", default="")
         self.db_url = self.database_url
         self.db_echo = _bool(_env("DB_ECHO", "DATABASE_ECHO", default="false"))
@@ -62,7 +69,9 @@ class Settings:
         self.data_retention_days = int(_env("DATA_RETENTION_DAYS", default="30"))
         self.log_level = _env("LOG_LEVEL", default="INFO").upper()
         self.log_format = _env("LOG_FORMAT", default="console").lower()
-        self.cors_origins = _env("CORS_ORIGINS", "ALLOWED_ORIGINS", "CORS_ALLOWED_ORIGINS", default="*")
+        self.cors_origins = _env(
+            "CORS_ORIGINS", "ALLOWED_ORIGINS", "CORS_ALLOWED_ORIGINS", default="*"
+        )
         # uppercase aliases for env-style access
         self.OUTPUT_LANGUAGE = self.output_language
         self.MODEL_NAME = self.model_name

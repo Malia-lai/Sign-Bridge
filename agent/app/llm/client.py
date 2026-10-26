@@ -7,7 +7,7 @@ from app.config import settings
 
 from .base_provider import BaseLLMProvider, classify_error
 from .circuit_breaker import CircuitBreaker, CircuitOpenError
-from .registry import create_provider, list_providers
+from .registry import create_provider as registry_create_provider
 
 
 def _extract_json(text: str) -> Dict[str, Any]:
@@ -24,7 +24,7 @@ def _extract_json(text: str) -> Dict[str, Any]:
 def _make_provider(name: str, **kwargs) -> BaseLLMProvider:
     name = (name or "").lower() or "mistral"
     try:
-        return create_provider(name, **kwargs)
+        return registry_create_provider(name, **kwargs)
     except Exception:
         # backward-compatible fallback
         if name == "gemini":
@@ -48,14 +48,24 @@ class LLMClient:
     ):
         primary_name = settings.llm_provider
         self.provider = provider if provider is not None else _make_provider(primary_name, **kwargs)
-        self.provider_name = primary_name if provider is None else type(provider).__name__.replace("Provider", "").lower()
+        self.provider_name = (
+            primary_name
+            if provider is None
+            else type(provider).__name__.replace("Provider", "").lower()
+        )
 
         # build fallback chain
         chain_names = []
         if fallback_chain is not None:
-            chain_names = list(fallback_chain) if not isinstance(fallback_chain, str) else [fallback_chain]
+            chain_names = (
+                list(fallback_chain) if not isinstance(fallback_chain, str) else [fallback_chain]
+            )
         if fallback_providers is not None:
-            chain_names = list(fallback_providers) if not isinstance(fallback_providers, str) else [fallback_providers]
+            chain_names = (
+                list(fallback_providers)
+                if not isinstance(fallback_providers, str)
+                else [fallback_providers]
+            )
         if fallback_provider is not None:
             if isinstance(fallback_provider, str):
                 chain_names = [fallback_provider] + chain_names
@@ -83,15 +93,18 @@ class LLMClient:
                     self._fallback_objects.append(name)
         # backward compat single fallback_provider attribute
         self.fallback_provider = self._fallback_objects[0] if self._fallback_objects else None
-        self.fallback_provider_name = (
-            getattr(self.fallback_provider, "provider_name", None)
-            or (type(self.fallback_provider).__name__.replace("Provider", "").lower() if self.fallback_provider is not None else None)
+        self.fallback_provider_name = getattr(self.fallback_provider, "provider_name", None) or (
+            type(self.fallback_provider).__name__.replace("Provider", "").lower()
+            if self.fallback_provider is not None
+            else None
         )
         self.fallback_providers = list(self._fallback_objects)
         self.provider_chain = [self.provider] + list(self._fallback_objects)
 
         if circuit_breaker is None:
-            circuit_breaker = CircuitBreaker(failure_threshold=0)  # disabled by default (0 disables)
+            circuit_breaker = CircuitBreaker(
+                failure_threshold=0
+            )  # disabled by default (0 disables)
         self.circuit_breaker = circuit_breaker
 
         self.last_provider_used = self.provider_name
@@ -184,7 +197,11 @@ class LLMClient:
                         cb.record_success()
                     self.last_provider_used = type(fb).__name__.replace("Provider", "").lower()
                     self.last_usage = getattr(fb, "last_usage", self.last_usage)
-                    self.last_retry_count = getattr(self.provider, "last_retry_count", 0) + 1 + getattr(fb, "last_retry_count", 0)
+                    self.last_retry_count = (
+                        getattr(self.provider, "last_retry_count", 0)
+                        + 1
+                        + getattr(fb, "last_retry_count", 0)
+                    )
                     return out
                 except Exception as exc:
                     last_exc = exc
@@ -225,7 +242,11 @@ class LLMClient:
                         cb.record_success()
                     self.last_provider_used = type(fb).__name__.replace("Provider", "").lower()
                     self.last_usage = getattr(fb, "last_usage", self.last_usage)
-                    self.last_retry_count = getattr(self.provider, "last_retry_count", 0) + 1 + getattr(fb, "last_retry_count", 0)
+                    self.last_retry_count = (
+                        getattr(self.provider, "last_retry_count", 0)
+                        + 1
+                        + getattr(fb, "last_retry_count", 0)
+                    )
                     return out
                 except Exception as exc:
                     last_exc = exc

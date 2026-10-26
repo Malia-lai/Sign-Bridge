@@ -2,7 +2,6 @@ import asyncio
 
 import httpx
 import pytest
-
 from app.llm.base_provider import classify_error
 from app.llm.gemini_provider import GeminiAPIError, GeminiProvider
 
@@ -13,9 +12,22 @@ def _transport(handler):
 
 def test_gemini_success():
     def handler(request):
-        return httpx.Response(200, json={
-            "candidates": [{"content": {"parts": [{"text": '{"sentence":"hi","intent":"greeting","confidence":0.9,"alternatives":[]}'}]}}]
-        })
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "text": '{"sentence":"hi","intent":"greeting","confidence":0.9,"alternatives":[]}'
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+        )
 
     p = GeminiProvider(api_key="k", model="m", transport=_transport(handler))
     out = asyncio.run(p.generate("sys", "user"))
@@ -55,9 +67,7 @@ def test_gemini_timeout():
 
 def test_gemini_sync_success():
     def handler(request):
-        return httpx.Response(200, json={
-            "candidates": [{"content": {"parts": [{"text": "ok"}]}}]
-        })
+        return httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": "ok"}]}}]})
 
     p = GeminiProvider(api_key="k", model="m", transport=_transport(handler))
     assert p.generate_sync("sys", "user") == "ok"

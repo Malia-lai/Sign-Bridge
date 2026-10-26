@@ -3,7 +3,6 @@ import os
 os.environ.setdefault("MOCK_MODE", "true")
 
 import pytest
-
 from app.core.agent import Agent
 from app.schemas.request import SentenceRequest
 

@@ -2,7 +2,7 @@
 
 import time
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Callable
 
 
 class CircuitState(str, Enum):

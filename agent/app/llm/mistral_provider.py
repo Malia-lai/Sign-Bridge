@@ -5,18 +5,18 @@ from mistralai.client import Mistral
 
 from app.config import settings
 
-
-class MistralAPIError(Exception):
-    def __init__(self, status_code, message=""):
-        super().__init__(message)
-        self.status_code = status_code
-
-from .base_provider import BaseLLMProvider, classify_error
+from .base_provider import BaseLLMProvider
 from .rate_limiter import (
     SlidingWindowRateLimiter,
     estimate_prompt_tokens,
     get_shared_limiter,
 )
+
+
+class MistralAPIError(Exception):
+    def __init__(self, status_code, message=""):
+        super().__init__(message)
+        self.status_code = status_code
 
 
 class MistralProvider(BaseLLMProvider):
@@ -40,7 +40,9 @@ class MistralProvider(BaseLLMProvider):
         self.timeout = timeout if timeout is not None else settings.timeout
         self.max_retries = settings.max_retries if max_retries is None else int(max_retries)
         self.temperature = settings.temperature if temperature is None else float(temperature)
-        self.max_output_tokens = settings.max_output_tokens if max_output_tokens is None else int(max_output_tokens)
+        self.max_output_tokens = (
+            settings.max_output_tokens if max_output_tokens is None else int(max_output_tokens)
+        )
         self.rate_limiter = rate_limiter or get_shared_limiter(
             settings.requests_per_minute, settings.tokens_per_minute
         )
@@ -63,7 +65,7 @@ class MistralProvider(BaseLLMProvider):
                     return float(retry_after)
                 except (TypeError, ValueError):
                     pass
-        return float(2 ** attempt)
+        return float(2**attempt)
 
     def _is_retryable(self, exc):
         status = getattr(exc, "status_code", None)
@@ -117,7 +119,9 @@ class MistralProvider(BaseLLMProvider):
                 )
                 usage = getattr(resp, "usage", None)
                 input_tokens = getattr(usage, "prompt_tokens", None) if usage is not None else None
-                output_tokens = getattr(usage, "completion_tokens", None) if usage is not None else None
+                output_tokens = (
+                    getattr(usage, "completion_tokens", None) if usage is not None else None
+                )
                 total_tokens = getattr(usage, "total_tokens", None) if usage is not None else None
                 if input_tokens is None:
                     input_tokens = input_estimate
@@ -179,7 +183,9 @@ class MistralProvider(BaseLLMProvider):
                     raise ValueError("empty candidates")
                 usage = getattr(resp, "usage", None)
                 input_tokens = getattr(usage, "prompt_tokens", None) if usage is not None else None
-                output_tokens = getattr(usage, "completion_tokens", None) if usage is not None else None
+                output_tokens = (
+                    getattr(usage, "completion_tokens", None) if usage is not None else None
+                )
                 total_tokens = getattr(usage, "total_tokens", None) if usage is not None else None
                 if input_tokens is None:
                     input_tokens = input_estimate

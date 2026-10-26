@@ -3,7 +3,6 @@ import uuid
 from fastapi import APIRouter, Request
 
 from app.api.dependencies import get_agent
-from app.core.agent import Agent
 from app.schemas.request import SentenceRequest
 from app.schemas.response import SentenceResponse
 

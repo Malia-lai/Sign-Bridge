@@ -6,20 +6,21 @@ import os
 from pathlib import Path
 from typing import Any, AsyncGenerator, Optional
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy import text
 from sqlalchemy.orm import DeclarativeBase
+
+from app.config import get_settings
 
 
 class Base(DeclarativeBase):
     pass
 
-from app.config import get_settings, settings
 
 # Global state
 _engine: Optional[AsyncEngine] = None
@@ -123,7 +124,7 @@ async def close_db() -> None:
 
 
 async def db_health_check(engine: Optional[AsyncEngine] = None) -> bool:
-    eng = engine or ( _engine if _engine is not None else None)
+    eng = engine or (_engine if _engine is not None else None)
     if eng is None:
         try:
             eng = get_engine()

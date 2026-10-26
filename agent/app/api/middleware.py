@@ -1,11 +1,13 @@
 """Middleware helpers for the agent API."""
 
+import time
 import uuid
+from collections import defaultdict, deque
 from typing import Callable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
@@ -23,12 +25,6 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         return response
 
 
-import time
-from collections import defaultdict, deque
-
-from starlette.responses import JSONResponse
-
-
 class APIKeyMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, api_key: str = ""):
         super().__init__(app)
@@ -37,10 +33,19 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         if self.api_key:
             # allow health/docs without key
-            if request.url.path not in {"/health", "/ready", "/metrics", "/docs", "/openapi.json", "/redoc"} and not request.url.path.startswith("/docs"):
+            if request.url.path not in {
+                "/health",
+                "/ready",
+                "/metrics",
+                "/docs",
+                "/openapi.json",
+                "/redoc",
+            } and not request.url.path.startswith("/docs"):
                 provided = request.headers.get("X-API-Key") or request.query_params.get("api_key")
                 if provided != self.api_key:
-                    return JSONResponse(status_code=401, content={"detail": "invalid or missing API key"})
+                    return JSONResponse(
+                        status_code=401, content={"detail": "invalid or missing API key"}
+                    )
         return await call_next(request)
 
 
@@ -73,7 +78,7 @@ class RequestResponseLoggingMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
             status = response.status_code
-        except Exception as exc:
+        except Exception:
             status = 500
             logger.exception("request failed: %s %s", request.method, request.url.path)
             raise

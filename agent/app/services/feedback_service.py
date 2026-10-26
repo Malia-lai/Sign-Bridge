@@ -9,7 +9,7 @@ import threading
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from app.schemas.feedback import FeedbackCreate, FeedbackRecord, FeedbackResponse, FeedbackStats
+from app.schemas.feedback import FeedbackRecord, FeedbackStats
 from app.utils.timing import *  # noqa: F401,F403
 
 
@@ -100,7 +100,7 @@ class FeedbackService:
             )
             self._items.append(record)
             if len(self._items) > self.max_items:
-                self._items = self._items[-self.max_items:]
+                self._items = self._items[-self.max_items :]
 
         # learning loop
         self._apply_learning(record)
@@ -132,7 +132,9 @@ class FeedbackService:
     def get_by_id(self, item_id: Any) -> Optional[FeedbackRecord]:
         return self.get(item_id)
 
-    def list(self, limit: Optional[int] = None, offset: int = 0, **kwargs: Any) -> List[FeedbackRecord]:
+    def list(
+        self, limit: Optional[int] = None, offset: int = 0, **kwargs: Any
+    ) -> List[FeedbackRecord]:
         with self._lock:
             items = list(self._items)
         start = max(0, int(offset or 0))
@@ -194,7 +196,9 @@ class FeedbackService:
         by_words: Dict[str, Dict[str, Any]] = {}
         for r in records:
             key = " ".join(r.words)
-            entry = by_words.setdefault(key, {"count": 0, "ratings": [], "corrections": [], "originals": []})
+            entry = by_words.setdefault(
+                key, {"count": 0, "ratings": [], "corrections": [], "originals": []}
+            )
             entry["count"] += 1
             v = _to_number(r.rating)
             if v is not None:
@@ -255,7 +259,12 @@ class FeedbackService:
     # ------------------------------------------------------------------ #
     # Confidence calibration
     # ------------------------------------------------------------------ #
-    def calibrate_confidence(self, confidence: Any, words: Optional[List[str]] = None, ratings: Optional[List[Any]] = None) -> float:
+    def calibrate_confidence(
+        self,
+        confidence: Any,
+        words: Optional[List[str]] = None,
+        ratings: Optional[List[Any]] = None,
+    ) -> float:
         from app.core.confidence import clamp_confidence
 
         base = clamp_confidence(confidence)
@@ -365,7 +374,9 @@ class FeedbackService:
             writer = csv.DictWriter(buf, fieldnames=list(records[0].keys()))
             writer.writeheader()
             for r in records:
-                writer.writerow({k: (json.dumps(v) if isinstance(v, (list, dict)) else v) for k, v in r.items()})
+                writer.writerow(
+                    {k: (json.dumps(v) if isinstance(v, (list, dict)) else v) for k, v in r.items()}
+                )
             return buf.getvalue()
         if format in {"dataset", "training"}:
             return {

@@ -214,7 +214,9 @@ class Repository:
     async def get_vocabulary_by_id(self, item_id: Any) -> Optional[Vocabulary]:
         return await self.get_vocabulary(item_id)
 
-    async def list_vocabulary(self, limit: Optional[int] = None, offset: int = 0, **kwargs: Any) -> Sequence[Vocabulary]:
+    async def list_vocabulary(
+        self, limit: Optional[int] = None, offset: int = 0, **kwargs: Any
+    ) -> Sequence[Vocabulary]:
         async with self._session() as session:
             stmt = select(Vocabulary).order_by(Vocabulary.id)
             if offset:
@@ -283,7 +285,13 @@ class Repository:
         async with self._session() as session:
             return await session.get(Prompt, item_id)
 
-    async def list_prompts(self, limit: Optional[int] = None, offset: int = 0, active: Optional[bool] = None, **kwargs: Any) -> Sequence[Prompt]:
+    async def list_prompts(
+        self,
+        limit: Optional[int] = None,
+        offset: int = 0,
+        active: Optional[bool] = None,
+        **kwargs: Any,
+    ) -> Sequence[Prompt]:
         async with self._session() as session:
             stmt = select(Prompt).order_by(Prompt.id)
             if active is not None:
@@ -347,7 +355,9 @@ class Repository:
     # ------------------------------------------------------------------ #
     # Retention / cleanup
     # ------------------------------------------------------------------ #
-    async def cleanup_old_records(self, days: Optional[int] = None, tables: Optional[list] = None) -> dict:
+    async def cleanup_old_records(
+        self, days: Optional[int] = None, tables: Optional[list] = None
+    ) -> dict:
         if days is None:
             try:
                 from app.config import get_settings

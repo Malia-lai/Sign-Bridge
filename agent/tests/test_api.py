@@ -2,8 +2,6 @@ import os
 
 os.environ.setdefault("MOCK_MODE", "true")
 
-from fastapi.testclient import TestClient
-
 
 def test_root_and_health(client):
     r = client.get("/")
@@ -92,7 +90,10 @@ def test_sentence_language_validation(client):
 
 
 def test_feedback_crud(client):
-    r = client.post("/feedback", json={"words": ["me", "water"], "rating": 5, "corrected_sentence": "I want water."})
+    r = client.post(
+        "/feedback",
+        json={"words": ["me", "water"], "rating": 5, "corrected_sentence": "I want water."},
+    )
     assert r.status_code == 200
     fid = r.json()["id"]
     r = client.get(f"/feedback/{fid}")
@@ -150,7 +151,9 @@ def test_vocabulary_endpoints(client):
 
 
 def test_prompts_endpoints(client):
-    r = client.post("/prompts", json={"name": "p1", "template": "Hello {output_language}", "activate": True})
+    r = client.post(
+        "/prompts", json={"name": "p1", "template": "Hello {output_language}", "activate": True}
+    )
     assert r.status_code == 200
     r = client.get("/prompts")
     assert r.status_code == 200

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import threading
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -56,7 +55,11 @@ class VocabularyService:
             self.vocabulary = agent.vocabulary
         else:
             self.vocabulary = {"words": []}
-        if self.path and (vocabulary is None) and (agent is None or getattr(agent, "vocabulary", None) is None):
+        if (
+            self.path
+            and (vocabulary is None)
+            and (agent is None or getattr(agent, "vocabulary", None) is None)
+        ):
             try:
                 self.load(self.path)
             except Exception:
@@ -106,7 +109,9 @@ class VocabularyService:
     def get(self, word: str) -> Optional[VocabularyEntry]:
         for w in self._entries():
             if str(w.get("word", "")).lower() == str(word).strip().lower():
-                return VocabularyEntry(**{k: v for k, v in w.items() if k in {"word", "tags", "metadata"}})
+                return VocabularyEntry(
+                    **{k: v for k, v in w.items() if k in {"word", "tags", "metadata"}}
+                )
         return None
 
     def _entries(self) -> List[Dict[str, Any]]:
@@ -123,7 +128,14 @@ class VocabularyService:
     # ------------------------------------------------------------------ #
     # Write
     # ------------------------------------------------------------------ #
-    def add(self, word: Any = None, tags: Any = None, metadata: Any = None, words: Any = None, **kwargs: Any) -> Any:
+    def add(
+        self,
+        word: Any = None,
+        tags: Any = None,
+        metadata: Any = None,
+        words: Any = None,
+        **kwargs: Any,
+    ) -> Any:
         # support add(word=...) or add({"word":...}) or add([...])
         targets = []
         if words is not None:
@@ -158,7 +170,13 @@ class VocabularyService:
                     existing[str(w).lower()]["tags"] = tgs
                     existing[str(w).lower()]["metadata"] = meta
                 else:
-                    entries.append({"word": str(w).strip(), "tags": list(tgs or []), "metadata": dict(meta or {})})
+                    entries.append(
+                        {
+                            "word": str(w).strip(),
+                            "tags": list(tgs or []),
+                            "metadata": dict(meta or {}),
+                        }
+                    )
                     existing[str(w).lower()] = entries[-1]
                 added.append(str(w).strip())
             for w in plain:
@@ -171,7 +189,9 @@ class VocabularyService:
                     if metadata is not None:
                         existing[s.lower()]["metadata"] = dict(metadata or {})
                 else:
-                    entries.append({"word": s, "tags": list(tags or []), "metadata": dict(metadata or {})})
+                    entries.append(
+                        {"word": s, "tags": list(tags or []), "metadata": dict(metadata or {})}
+                    )
                     existing[s.lower()] = entries[-1]
                 added.append(s)
             # write back
@@ -199,8 +219,10 @@ class VocabularyService:
                 before = len(self.vocabulary["words"])
                 target_set = {str(w).strip().lower() for w in targets}
                 self.vocabulary["words"] = [
-                    item for item in self.vocabulary["words"]
-                    if (item if isinstance(item, str) else item.get("word", "")).lower() not in target_set
+                    item
+                    for item in self.vocabulary["words"]
+                    if (item if isinstance(item, str) else item.get("word", "")).lower()
+                    not in target_set
                 ]
                 removed_any = len(self.vocabulary["words"]) < before
             self._sync_agent()
@@ -212,7 +234,9 @@ class VocabularyService:
     def update(self, word: str, tags: Any = None, metadata: Any = None, **kwargs: Any) -> bool:
         return self.add(word=word, tags=tags, metadata=metadata, **kwargs) is not None
 
-    def import_vocabulary(self, data: Any = None, path: Optional[str] = None, replace: bool = False, **kwargs: Any) -> int:
+    def import_vocabulary(
+        self, data: Any = None, path: Optional[str] = None, replace: bool = False, **kwargs: Any
+    ) -> int:
         if path:
             data = json.loads(Path(path).read_text(encoding="utf-8"))
         if data is None:

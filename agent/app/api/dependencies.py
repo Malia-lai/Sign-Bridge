@@ -1,14 +1,15 @@
 """FastAPI dependency providers for the agent service."""
 
-import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 from fastapi import Request
 
-from app.config import Settings, get_settings as _config_get_settings, settings as _settings
-from app.core.agent import Agent, PROMPTS_DIR, load_system_prompt, load_vocabulary, load_examples
-from app.llm.client import LLMClient, get_llm_client as _make_llm_client
+from app.config import Settings
+from app.config import get_settings as _config_get_settings
+from app.config import settings as _settings
+from app.core.agent import PROMPTS_DIR, Agent
+from app.llm.client import LLMClient
 
 
 def get_settings() -> Settings:
@@ -45,7 +46,6 @@ def get_llm_client(request: Optional[Request] = None) -> LLMClient:
             c = getattr(client, "llm_client", None)
             if c is not None:
                 return c
-    s = get_settings()
     # build from provider settings
     from app.llm.client import LLMClient as _LLMClient
 
@@ -64,10 +64,10 @@ def get_agent(request: Optional[Request] = None) -> Agent:
     agent = Agent(mock_mode=s.mock_mode)
     # attach shared services if available
     try:
-        from app.services.history_service import get_history_service
         from app.services.correction_service import get_correction_service
-        from app.services.vocabulary_service import get_vocabulary_service
+        from app.services.history_service import get_history_service
         from app.services.prompt_service import get_prompt_service
+        from app.services.vocabulary_service import get_vocabulary_service
 
         agent.history_service = get_history_service()
         agent.correction_service = get_correction_service()
@@ -76,7 +76,12 @@ def get_agent(request: Optional[Request] = None) -> Agent:
         from app.services.feedback_service import get_feedback_service
 
         agent.feedback_service = get_feedback_service()
-        for svc in (agent.history_service, agent.correction_service, agent.vocabulary_service, agent.prompt_service):
+        for svc in (
+            agent.history_service,
+            agent.correction_service,
+            agent.vocabulary_service,
+            agent.prompt_service,
+        ):
             try:
                 svc.agent = agent
             except Exception:

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import threading
-import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -47,7 +46,9 @@ class HistoryService:
         from app.config import settings
 
         self.agent = agent
-        self.max_items = int(max_items if max_items is not None else getattr(settings, "history_size", 1000))
+        self.max_items = int(
+            max_items if max_items is not None else getattr(settings, "history_size", 1000)
+        )
         self.storage_path = storage_path
         self._items: List[HistoryRecord] = []
         self._counter = 0
@@ -81,10 +82,16 @@ class HistoryService:
                 words = getattr(src, "words", None)
             sentence = getattr(src, "sentence", sentence) if sentence is None else sentence
             intent = getattr(src, "intent", intent) if intent is None else intent
-            confidence = getattr(src, "confidence", confidence) if confidence is None else confidence
-            alternatives = getattr(src, "alternatives", alternatives) if alternatives is None else alternatives
+            confidence = (
+                getattr(src, "confidence", confidence) if confidence is None else confidence
+            )
+            alternatives = (
+                getattr(src, "alternatives", alternatives) if alternatives is None else alternatives
+            )
             fallback = getattr(src, "fallback", fallback)
-            emergency = getattr(src, "emergency", emergency) or getattr(src, "is_emergency", emergency)
+            emergency = getattr(src, "emergency", emergency) or getattr(
+                src, "is_emergency", emergency
+            )
             cached = getattr(src, "cached", cached)
         if entry is not None:
             if isinstance(entry, dict):
@@ -98,7 +105,17 @@ class HistoryService:
                 request_id = entry.get("request_id", request_id)
                 metadata = entry.get("metadata", metadata)
             else:
-                for field in ("words", "sentence", "intent", "confidence", "alternatives", "fallback", "emergency", "request_id", "metadata"):
+                for field in (
+                    "words",
+                    "sentence",
+                    "intent",
+                    "confidence",
+                    "alternatives",
+                    "fallback",
+                    "emergency",
+                    "request_id",
+                    "metadata",
+                ):
                     val = getattr(entry, field, None)
                     if val is not None:
                         locals()[field] = val
@@ -129,7 +146,7 @@ class HistoryService:
             )
             self._items.append(rec)
             if len(self._items) > self.max_items:
-                self._items = self._items[-self.max_items:]
+                self._items = self._items[-self.max_items :]
         if self.storage_path:
             self._save()
         return rec
@@ -157,7 +174,9 @@ class HistoryService:
                     return r
         return None
 
-    def list(self, limit: Optional[int] = None, offset: int = 0, **kwargs: Any) -> List[HistoryRecord]:
+    def list(
+        self, limit: Optional[int] = None, offset: int = 0, **kwargs: Any
+    ) -> List[HistoryRecord]:
         with self._lock:
             items = list(self._items)
         # newest first is common; keep insertion order? Tests may expect either. Provide offset/limit over stored order.

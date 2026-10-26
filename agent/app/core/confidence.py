@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from app.config import settings
 from app.schemas.response import SentenceResponse
@@ -64,12 +64,16 @@ def ensure_alternatives(
     fallback_sentence = " ".join(w for w in words if str(w).strip()).strip()
     if fallback_sentence and fallback_sentence != resp.sentence:
         # capitalize nicely
-        fallback_sentence = fallback_sentence[0].upper() + fallback_sentence[1:] if fallback_sentence else fallback_sentence
+        fallback_sentence = (
+            fallback_sentence[0].upper() + fallback_sentence[1:]
+            if fallback_sentence
+            else fallback_sentence
+        )
 
     if below_threshold(resp.confidence, thr):
         candidates: List[str] = []
         # LLM-provided alternatives first
-        for a in (resp.alternatives or []):
+        for a in resp.alternatives or []:
             candidates.append(str(a))
         # the generated sentence itself is a meaningful option
         if resp.sentence:
@@ -105,7 +109,7 @@ def ensure_alternatives(
 
 def aggregate_confidence(confidences: Any, method: str = "mean") -> float:
     vals = []
-    for c in (confidences or []):
+    for c in confidences or []:
         vals.append(clamp_confidence(c))
     if not vals:
         return 1.0
@@ -129,12 +133,23 @@ aggregate_word_confidences = aggregate_confidence
 aggregate_confidences = aggregate_confidence
 aggregate = aggregate_confidence
 combine_confidences = aggregate_confidence
-mean_confidence = lambda c: aggregate_confidence(c, "mean")
-min_confidence = lambda c: aggregate_confidence(c, "min")
-max_confidence = lambda c: aggregate_confidence(c, "max")
 
 
-def calibrate_confidence(confidence: Any, feedback: Any = None, ratings: Any = None, **kwargs: Any) -> float:
+def mean_confidence(confidences):
+    return aggregate_confidence(confidences, "mean")
+
+
+def min_confidence(confidences):
+    return aggregate_confidence(confidences, "min")
+
+
+def max_confidence(confidences):
+    return aggregate_confidence(confidences, "max")
+
+
+def calibrate_confidence(
+    confidence: Any, feedback: Any = None, ratings: Any = None, **kwargs: Any
+) -> float:
     """Calibrate confidence using feedback ratings."""
     base = clamp_confidence(confidence)
     vals = []

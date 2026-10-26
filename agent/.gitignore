@@ -4,3 +4,7 @@ __pycache__/
 # Generated DB artifacts
 *.db
 backup.json
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml

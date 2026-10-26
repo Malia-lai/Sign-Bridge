@@ -3,10 +3,9 @@ import json
 
 import httpx
 import pytest
-
+from app.config import Settings
 from app.llm.gemini_provider import GeminiProvider
 from app.llm.rate_limiter import SlidingWindowRateLimiter
-from app.config import Settings
 
 
 class FakeClock:
@@ -22,9 +21,7 @@ class FakeClock:
 
 def test_sliding_window_enforces_token_budget_with_fake_clock():
     clock = FakeClock()
-    limiter = SlidingWindowRateLimiter(
-        5, 10, clock=clock.time, sleep=clock.sleep
-    )
+    limiter = SlidingWindowRateLimiter(5, 10, clock=clock.time, sleep=clock.sleep)
 
     async def run():
         await limiter.acquire(6)
@@ -44,9 +41,7 @@ def test_token_budget_default_is_14000(monkeypatch):
 
 def test_sliding_window_enforces_request_budget_with_fake_clock():
     clock = FakeClock()
-    limiter = SlidingWindowRateLimiter(
-        1, 100, clock=clock.time, sleep=clock.sleep
-    )
+    limiter = SlidingWindowRateLimiter(1, 100, clock=clock.time, sleep=clock.sleep)
 
     async def run():
         await limiter.acquire(5)
@@ -58,9 +53,7 @@ def test_sliding_window_enforces_request_budget_with_fake_clock():
 
 def test_actual_usage_replaces_estimated_token_reservation():
     clock = FakeClock()
-    limiter = SlidingWindowRateLimiter(
-        5, 10, clock=clock.time, sleep=clock.sleep
-    )
+    limiter = SlidingWindowRateLimiter(5, 10, clock=clock.time, sleep=clock.sleep)
 
     async def run():
         reservation = await limiter.acquire(8)
@@ -91,17 +84,34 @@ def test_retry_waits_for_both_sliding_budgets(requests_per_minute, tokens_per_mi
         calls += 1
         if calls == 1:
             return httpx.Response(429, text="rate limit")
-        return httpx.Response(200, json={
-            "candidates": [{"content": {"parts": [{"text": json.dumps({
-                "sentence": "hello", "intent": "greeting", "confidence": 0.9,
-                "alternatives": [],
-            })}]}}],
-            "usageMetadata": {
-                "promptTokenCount": 2,
-                "candidatesTokenCount": 1,
-                "totalTokenCount": 3,
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "text": json.dumps(
+                                        {
+                                            "sentence": "hello",
+                                            "intent": "greeting",
+                                            "confidence": 0.9,
+                                            "alternatives": [],
+                                        }
+                                    )
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "usageMetadata": {
+                    "promptTokenCount": 2,
+                    "candidatesTokenCount": 1,
+                    "totalTokenCount": 3,
+                },
             },
-        })
+        )
 
     provider = GeminiProvider(
         api_key="fake",

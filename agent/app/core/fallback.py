@@ -1,8 +1,8 @@
-from typing import Any, Iterable, List, Optional, Union
+from typing import Any, List, Optional
 
 from app.config import settings
-from app.schemas.response import SentenceResponse
 from app.core.confidence import clamp_confidence
+from app.schemas.response import SentenceResponse
 
 
 def _extra_emergency_keywords(extra: Any = None) -> set:
@@ -84,7 +84,11 @@ def build_fallback(
     fallback_reasons: Optional[List[str]] = None,
 ) -> SentenceResponse:
     sentence = " ".join(w for w in (words or []) if str(w).strip()).strip()
-    reasons = list(fallback_reasons) if fallback_reasons else ([fallback_reason] if fallback_reason else [])
+    reasons = (
+        list(fallback_reasons)
+        if fallback_reasons
+        else ([fallback_reason] if fallback_reason else [])
+    )
     if emergency and "emergency" not in reasons:
         reasons = reasons + ["emergency"]
     return SentenceResponse(
@@ -105,4 +109,12 @@ def build_fallback(
 
 
 def fallback_response(words, unknown_words=None, **kwargs):
-    return build_fallback(words, unknown_words=unknown_words, **{k: v for k, v in kwargs.items() if k in {"confidence", "intent", "fallback", "fallback_reason"}})
+    return build_fallback(
+        words,
+        unknown_words=unknown_words,
+        **{
+            k: v
+            for k, v in kwargs.items()
+            if k in {"confidence", "intent", "fallback", "fallback_reason"}
+        },
+    )

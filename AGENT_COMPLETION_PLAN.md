@@ -144,9 +144,9 @@ add persistence/feedback, and ship it.
 95. [x] Write `docs/api-contract.md` (endpoints, schemas, examples).
 96. [x] Complete `docker-compose.yml` and `Dockerfile` (multi-stage + healthcheck).
 97. [x] Add CI (GitHub Actions) for tests + lint.
-98. [ ] Add linting/formatting config (ruff/black).
-99. [ ] Integrate agent with frontend or document standalone usage + port.
-100. [ ] Release checklist: version bump, changelog, tag.
+98. [x] Add linting/formatting config (Ruff lint + formatter) and enforce it in CI.
+99. [x] Document standalone agent usage, API port, and frontend connection requirements.
+100. [x] Add a release checklist covering version bump, changelog, and annotated Git tag.
 
 ---
 

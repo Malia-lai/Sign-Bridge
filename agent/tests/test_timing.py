@@ -1,10 +1,11 @@
-import os
 import asyncio
+import os
 
 os.environ.setdefault("MOCK_MODE", "true")
 
 import time
-from app.utils.timing import TimingContext, Timer, timed, timing, measure, stage_timer
+
+from app.utils.timing import TimingContext, measure, stage_timer, timed, timing
 
 
 def test_timing_context_basic():

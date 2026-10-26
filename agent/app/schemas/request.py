@@ -52,7 +52,6 @@ class SentenceRequest(BaseModel):
         if not isinstance(v, (list, tuple, set)):
             raise ValueError("words must be a list")
         out = list(v)
-        limit = getattr(settings, "max_words", None)
         # per-request max_words not available here; global check below
         return out
 

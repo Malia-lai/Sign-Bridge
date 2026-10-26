@@ -2,13 +2,19 @@ import os
 
 os.environ.setdefault("MOCK_MODE", "true")
 
-from app.services.correction_service import CorrectionService, get_correction_service, reset_correction_store
+from app.services.correction_service import (
+    CorrectionService,
+    get_correction_service,
+    reset_correction_store,
+)
 
 
 def test_correction_record_and_list():
     reset_correction_store()
     svc = get_correction_service()
-    rec = svc.record(words=["me", "water"], original_sentence="me water", corrected_sentence="I want water.")
+    rec = svc.record(
+        words=["me", "water"], original_sentence="me water", corrected_sentence="I want water."
+    )
     assert rec.id >= 1
     assert svc.get(rec.id) is not None
     assert len(svc.list()) == 1
@@ -18,7 +24,9 @@ def test_correction_record_and_list():
 def test_correction_apply_learning(agent):
     reset_correction_store()
     svc = CorrectionService(agent=agent, learning_enabled=True)
-    rec = svc.record(words=["me", "water"], original_sentence="me water", corrected_sentence="I want water.")
+    rec = svc.record(
+        words=["me", "water"], original_sentence="me water", corrected_sentence="I want water."
+    )
     assert rec.applied is True
     # example added
     assert any("I want water." in str(ex.get("sentence")) for ex in (agent.examples or []))

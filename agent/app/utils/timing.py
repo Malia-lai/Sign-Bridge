@@ -131,16 +131,20 @@ def timed(stage: Optional[str] = None, timer: Optional[Timer] = None):
         name = stage or getattr(func, "__name__", "function")
 
         if asyncio.iscoroutinefunction(func):
+
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
                 with TimingContext(name):
                     return await func(*args, **kwargs)
+
             return wrapper
         else:
+
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
                 with TimingContext(name):
                     return func(*args, **kwargs)
+
             return wrapper
 
     return decorator

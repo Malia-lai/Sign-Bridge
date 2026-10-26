@@ -7,7 +7,9 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_feedback_crud(repository):
-    obj = await repository.create_feedback(words=["a", "b"], rating=5, original_sentence="ab", metadata={"x": 1})
+    obj = await repository.create_feedback(
+        words=["a", "b"], rating=5, original_sentence="ab", metadata={"x": 1}
+    )
     assert obj.id is not None
     got = await repository.get_feedback(obj.id)
     assert got is not None
@@ -20,7 +22,9 @@ async def test_feedback_crud(repository):
 
 @pytest.mark.asyncio
 async def test_history_crud(repository):
-    obj = await repository.create_history(words=["a"], sentence="A.", intent="statement", confidence=0.8)
+    obj = await repository.create_history(
+        words=["a"], sentence="A.", intent="statement", confidence=0.8
+    )
     assert obj.id is not None
     got = await repository.get_history(obj.id)
     assert got.sentence == "A."

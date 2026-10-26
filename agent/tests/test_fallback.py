@@ -2,8 +2,6 @@ import asyncio
 import json
 from types import SimpleNamespace
 
-import pytest
-
 from app.core.agent import Agent
 from app.core.fallback import build_fallback, detect_emergency
 from app.llm.base_provider import classify_error
@@ -25,7 +23,6 @@ def test_fallback_empty():
 
 
 def test_fallback_reasons(monkeypatch):
-    import app.core.agent as agent_mod
 
     class RateLimitError(Exception):
         status_code = 429
@@ -42,6 +39,7 @@ def test_fallback_reasons(monkeypatch):
     }
 
     for expected, exc in cases.items():
+
         class BadClient:
             async def generate_json(self, *a, **k):
                 raise exc
@@ -83,7 +81,15 @@ def test_retry_behavior(monkeypatch):
             exc = Exception("rate")
             exc.status_code = 429
             raise exc
-        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content='{"sentence":"hi","intent":"greeting","confidence":0.9,"alternatives":[]}'))])
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        content='{"sentence":"hi","intent":"greeting","confidence":0.9,"alternatives":[]}'
+                    )
+                )
+            ]
+        )
 
     provider.client.chat.complete_async = fake_complete
     out = asyncio.run(provider.generate("sys", "user"))

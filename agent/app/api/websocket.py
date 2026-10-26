@@ -7,9 +7,9 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from app.config import get_settings
 from app.core.agent import Agent
 from app.schemas.request import SentenceRequest
-from app.config import get_settings
 
 router = APIRouter(tags=["websocket"])
 
@@ -32,10 +32,16 @@ class ConnectionManager:
         self.send_timeout = float(send_timeout)
         self.max_queue = int(max_queue)
 
-    async def connect(self, websocket: WebSocket, client_id: Optional[str] = None, **metadata: Any) -> None:
+    async def connect(
+        self, websocket: WebSocket, client_id: Optional[str] = None, **metadata: Any
+    ) -> None:
         await websocket.accept()
         self.active_connections.append(websocket)
-        self._metadata[websocket] = {"client_id": client_id, "connected_at": time.time(), **metadata}
+        self._metadata[websocket] = {
+            "client_id": client_id,
+            "connected_at": time.time(),
+            **metadata,
+        }
 
     def disconnect(self, websocket: WebSocket) -> None:
         if websocket in self.active_connections:
@@ -116,7 +122,9 @@ async def websocket_sentence(websocket: WebSocket) -> None:
             if mtype == "pong":
                 continue
             if mtype != "sentence":
-                ok = await manager.send_json(websocket, {"type": "error", "error": f"unknown type: {mtype}"})
+                ok = await manager.send_json(
+                    websocket, {"type": "error", "error": f"unknown type: {mtype}"}
+                )
                 if not ok:
                     break
                 continue
@@ -134,7 +142,9 @@ async def websocket_sentence(websocket: WebSocket) -> None:
                             break
                 else:
                     result = await agent.process(req)
-                    ok = await manager.send_json(websocket, {"type": "result", "data": result.model_dump()})
+                    ok = await manager.send_json(
+                        websocket, {"type": "result", "data": result.model_dump()}
+                    )
                     if not ok:
                         break
             except Exception as exc:

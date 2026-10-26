@@ -1,7 +1,6 @@
 import asyncio
 
 import pytest
-
 from app.llm.base_provider import classify_error
 from app.llm.mistral_provider import MistralAPIError, MistralProvider
 
@@ -10,10 +9,30 @@ def test_mistral_success(monkeypatch):
     provider = MistralProvider(api_key="k", model="m", max_retries=0)
 
     async def fake_complete(*a, **k):
-        return type("Resp", (), {
-            "choices": [type("C", (), {"message": type("M", (), {"content": '{"sentence":"hi","intent":"greeting","confidence":0.9,"alternatives":[]}'})()})()],
-            "usage": type("U", (), {"prompt_tokens": 2, "completion_tokens": 1, "total_tokens": 3})(),
-        })()
+        return type(
+            "Resp",
+            (),
+            {
+                "choices": [
+                    type(
+                        "C",
+                        (),
+                        {
+                            "message": type(
+                                "M",
+                                (),
+                                {
+                                    "content": '{"sentence":"hi","intent":"greeting","confidence":0.9,"alternatives":[]}'
+                                },
+                            )()
+                        },
+                    )()
+                ],
+                "usage": type(
+                    "U", (), {"prompt_tokens": 2, "completion_tokens": 1, "total_tokens": 3}
+                )(),
+            },
+        )()
 
     monkeypatch.setattr(provider.client.chat, "complete_async", fake_complete)
     out = asyncio.run(provider.generate("sys", "user"))
@@ -65,10 +84,14 @@ def test_mistral_sync_success(monkeypatch):
     provider = MistralProvider(api_key="k", model="m", max_retries=0)
 
     def fake_complete(*a, **k):
-        return type("Resp", (), {
-            "choices": [type("C", (), {"message": type("M", (), {"content": "ok"})()})()],
-            "usage": None,
-        })()
+        return type(
+            "Resp",
+            (),
+            {
+                "choices": [type("C", (), {"message": type("M", (), {"content": "ok"})()})()],
+                "usage": None,
+            },
+        )()
 
     monkeypatch.setattr(provider.client.chat, "complete", fake_complete)
     assert provider.generate_sync("sys", "user") == "ok"

@@ -1,10 +1,10 @@
 """History endpoints."""
 
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from app.services.history_service import get_history_service, reset_history_store
+from app.services.history_service import get_history_service
 
 router = APIRouter(tags=["history"])
 

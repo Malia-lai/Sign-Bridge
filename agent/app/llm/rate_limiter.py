@@ -6,7 +6,6 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Any, Callable, Deque
 
-
 WINDOW_SECONDS = 60.0
 
 
@@ -144,7 +143,9 @@ _shared_limiters: dict[tuple[int, int], SlidingWindowRateLimiter] = {}
 _shared_lock = threading.Lock()
 
 
-def get_shared_limiter(requests_per_minute: int, tokens_per_minute: int, key: Any = None) -> SlidingWindowRateLimiter:
+def get_shared_limiter(
+    requests_per_minute: int, tokens_per_minute: int, key: Any = None
+) -> SlidingWindowRateLimiter:
     base_key = (requests_per_minute, tokens_per_minute)
     if key is None:
         store_key = base_key
@@ -163,7 +164,9 @@ _per_key_limiters: dict = {}
 _per_key_lock = threading.Lock()
 
 
-def get_limiter_for_key(key: Any, requests_per_minute: int = 30, tokens_per_minute: int = 14000) -> SlidingWindowRateLimiter:
+def get_limiter_for_key(
+    key: Any, requests_per_minute: int = 30, tokens_per_minute: int = 14000
+) -> SlidingWindowRateLimiter:
     store_key = (str(key), requests_per_minute, tokens_per_minute)
     with _per_key_lock:
         limiter = _per_key_limiters.get(store_key)
@@ -173,11 +176,15 @@ def get_limiter_for_key(key: Any, requests_per_minute: int = 30, tokens_per_minu
         return limiter
 
 
-def get_user_limiter(user_id: Any, requests_per_minute: int = 30, tokens_per_minute: int = 14000) -> SlidingWindowRateLimiter:
+def get_user_limiter(
+    user_id: Any, requests_per_minute: int = 30, tokens_per_minute: int = 14000
+) -> SlidingWindowRateLimiter:
     return get_limiter_for_key(f"user:{user_id}", requests_per_minute, tokens_per_minute)
 
 
-def get_api_key_limiter(api_key: Any, requests_per_minute: int = 30, tokens_per_minute: int = 14000) -> SlidingWindowRateLimiter:
+def get_api_key_limiter(
+    api_key: Any, requests_per_minute: int = 30, tokens_per_minute: int = 14000
+) -> SlidingWindowRateLimiter:
     return get_limiter_for_key(f"apikey:{api_key}", requests_per_minute, tokens_per_minute)
 
 

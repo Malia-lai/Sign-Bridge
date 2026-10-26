@@ -1,5 +1,4 @@
 import asyncio
-import json
 import math
 import time
 
@@ -8,7 +7,7 @@ import httpx
 from app.config import settings
 from app.schemas.response import LLMOutput
 
-from .base_provider import BaseLLMProvider, classify_error
+from .base_provider import BaseLLMProvider
 from .rate_limiter import (
     SlidingWindowRateLimiter,
     estimate_call_tokens,
@@ -47,7 +46,9 @@ class GeminiProvider(BaseLLMProvider):
         self.timeout = timeout if timeout is not None else settings.timeout
         self.max_retries = settings.max_retries if max_retries is None else int(max_retries)
         self.temperature = settings.temperature if temperature is None else float(temperature)
-        self.max_output_tokens = settings.max_output_tokens if max_output_tokens is None else int(max_output_tokens)
+        self.max_output_tokens = (
+            settings.max_output_tokens if max_output_tokens is None else int(max_output_tokens)
+        )
         self.rate_limiter = rate_limiter or get_shared_limiter(
             settings.requests_per_minute, settings.tokens_per_minute
         )
@@ -61,11 +62,13 @@ class GeminiProvider(BaseLLMProvider):
 
     @staticmethod
     def estimate_tokens(system_prompt, user_prompt, max_output_tokens=None):
-        output_tokens = settings.max_output_tokens if max_output_tokens is None else max_output_tokens
+        output_tokens = (
+            settings.max_output_tokens if max_output_tokens is None else max_output_tokens
+        )
         return estimate_call_tokens(system_prompt, user_prompt, output_tokens)
 
     def _retry_delay(self, exc, attempt):
-        return float(2 ** attempt)
+        return float(2**attempt)
 
     def _is_retryable(self, exc):
         status = getattr(exc, "status_code", None)
@@ -129,17 +132,26 @@ class GeminiProvider(BaseLLMProvider):
         metadata = data.get("usageMetadata") or {}
         input_tokens = metadata.get("promptTokenCount", metadata.get("prompt_token_count"))
         output_tokens = metadata.get("candidatesTokenCount", metadata.get("candidates_token_count"))
-        input_tokens = int(input_tokens) if input_tokens is not None else estimate_prompt_tokens(system_prompt, user_prompt)
-        output_tokens = int(output_tokens) if output_tokens is not None else math.ceil(len(text) / 4)
+        input_tokens = (
+            int(input_tokens)
+            if input_tokens is not None
+            else estimate_prompt_tokens(system_prompt, user_prompt)
+        )
+        output_tokens = (
+            int(output_tokens) if output_tokens is not None else math.ceil(len(text) / 4)
+        )
         total_tokens = metadata.get("totalTokenCount", metadata.get("total_token_count"))
         has_actual_total = total_tokens is not None or (
             metadata.get("promptTokenCount", metadata.get("prompt_token_count")) is not None
-            and metadata.get("candidatesTokenCount", metadata.get("candidates_token_count")) is not None
+            and metadata.get("candidatesTokenCount", metadata.get("candidates_token_count"))
+            is not None
         )
         usage = {
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
-            "total_tokens": int(total_tokens) if total_tokens is not None else input_tokens + output_tokens,
+            "total_tokens": int(total_tokens)
+            if total_tokens is not None
+            else input_tokens + output_tokens,
             "reported": has_actual_total,
         }
         return text, usage
@@ -218,17 +230,23 @@ class GeminiProvider(BaseLLMProvider):
                     raise GeminiAPIError(400, "empty candidates")
                 metadata = data.get("usageMetadata") or {}
                 input_tokens = metadata.get("promptTokenCount", metadata.get("prompt_token_count"))
-                output_tokens = metadata.get("candidatesTokenCount", metadata.get("candidates_token_count"))
-                has_actual_total = metadata.get("totalTokenCount", metadata.get("total_token_count")) is not None or (
-                    input_tokens is not None and output_tokens is not None
+                output_tokens = metadata.get(
+                    "candidatesTokenCount", metadata.get("candidates_token_count")
                 )
+                has_actual_total = metadata.get(
+                    "totalTokenCount", metadata.get("total_token_count")
+                ) is not None or (input_tokens is not None and output_tokens is not None)
                 input_tokens = int(input_tokens) if input_tokens is not None else input_estimate
-                output_tokens = int(output_tokens) if output_tokens is not None else math.ceil(len(text) / 4)
+                output_tokens = (
+                    int(output_tokens) if output_tokens is not None else math.ceil(len(text) / 4)
+                )
                 total_tokens = metadata.get("totalTokenCount", metadata.get("total_token_count"))
                 self.last_usage = {
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
-                    "total_tokens": int(total_tokens) if total_tokens is not None else input_tokens + output_tokens,
+                    "total_tokens": int(total_tokens)
+                    if total_tokens is not None
+                    else input_tokens + output_tokens,
                 }
                 if has_actual_total:
                     self.rate_limiter.update(reservation, self.last_usage["total_tokens"])
