@@ -41,11 +41,24 @@ async def ready(request: Request = None):
         from app.api.dependencies import validate_prompt_files
 
         validate_prompt_files()
+        # DB health check
+        from app.db.database import db_health_check
+
+        if not await db_health_check():
+            raise RuntimeError("database not ready")
         return {"status": "ready"}
     except Exception as exc:
         from fastapi import HTTPException
 
         raise HTTPException(status_code=503, detail=str(exc))
+
+
+@router.get("/health/db")
+async def health_db(request: Request = None):
+    from app.db.database import db_health_check
+
+    ok = await db_health_check()
+    return {"status": "ok" if ok else "error", "database": ok}
 
 
 @router.get("/metrics")

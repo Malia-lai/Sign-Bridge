@@ -95,16 +95,16 @@ add persistence/feedback, and ship it.
 
 ## Phase 6 — Data & Persistence (63–72)
 
-61. [ ] Implement `app/db/database.py` (async engine + sessions).
-62. [ ] Implement `app/db/models.py` (Feedback, History, Vocabulary, Prompt).
-63. [ ] Implement `app/db/repository.py` (CRUD).
-64. [ ] Add Alembic migrations.
-65. [ ] Add DB health check.
-66. [ ] Configure connection pooling.
-67. [ ] Support SQLite (default) + Postgres via env.
-68. [ ] Add data retention/cleanup job.
-69. [ ] Add backup/restore scripts.
-70. [ ] Add seeding script for default vocabulary/prompts.
+61. [x] Implement `app/db/database.py` (async engine + sessions).
+62. [x] Implement `app/db/models.py` (Feedback, History, Vocabulary, Prompt).
+63. [x] Implement `app/db/repository.py` (CRUD).
+64. [x] Add Alembic migrations.
+65. [x] Add DB health check.
+66. [x] Configure connection pooling.
+67. [x] Support SQLite (default) + Postgres via env.
+68. [x] Add data retention/cleanup job.
+69. [x] Add backup/restore scripts.
+70. [x] Add seeding script for default vocabulary/prompts.
 
 ## Phase 7 — Feedback & Correction (73–80)
 

@@ -30,6 +30,17 @@ async def lifespan(app: FastAPI):
     validate_prompt_files()
     settings = get_settings()
     app.state.settings = settings
+    # database
+    from app.db.database import init_db, close_db
+
+    app.state.db_engine = await init_db()
+    app.state.db_session_factory = None
+    try:
+        from app.db.database import get_session_factory
+
+        app.state.db_session_factory = get_session_factory(app.state.db_engine)
+    except Exception:
+        pass
     app.state.llm_client = LLMClient()
 
     from app.services.correction_service import get_correction_service
@@ -61,6 +72,11 @@ async def lifespan(app: FastAPI):
     except Exception:
         pass
     yield
+    # shutdown db
+    try:
+        await close_db()
+    except Exception:
+        pass
     client = getattr(app.state, "llm_client", None)
     if client is not None:
         for provider in (getattr(client, "provider", None), getattr(client, "fallback_provider", None)):

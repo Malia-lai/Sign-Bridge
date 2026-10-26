@@ -52,6 +52,14 @@ class Settings:
         self.prompt_ab_enabled = _bool(_env("PROMPT_AB_ENABLED", default="false"))
         self.prompt_variants = _env("PROMPT_VARIANTS", default="A,B")
         self.correction_learning = _bool(_env("CORRECTION_LEARNING", "LEARN_FROM_CORRECTIONS", default="true"))
+        self.database_url = _env("DATABASE_URL", "DB_URL", "POSTGRES_URL", default="")
+        self.db_url = self.database_url
+        self.db_echo = _bool(_env("DB_ECHO", "DATABASE_ECHO", default="false"))
+        self.db_pool_size = int(_env("DB_POOL_SIZE", default="5"))
+        self.db_max_overflow = int(_env("DB_MAX_OVERFLOW", default="10"))
+        self.db_pool_timeout = int(_env("DB_POOL_TIMEOUT", default="30"))
+        self.db_pool_recycle = int(_env("DB_POOL_RECYCLE", default="1800"))
+        self.data_retention_days = int(_env("DATA_RETENTION_DAYS", default="30"))
         self.log_level = _env("LOG_LEVEL", default="INFO").upper()
         self.log_format = _env("LOG_FORMAT", default="console").lower()
         self.cors_origins = _env("CORS_ORIGINS", "ALLOWED_ORIGINS", "CORS_ALLOWED_ORIGINS", default="*")
@@ -91,6 +99,14 @@ class Settings:
         self.PROMPT_AB_ENABLED = self.prompt_ab_enabled
         self.PROMPT_VARIANTS = self.prompt_variants
         self.CORRECTION_LEARNING = self.correction_learning
+        self.DATABASE_URL = self.database_url
+        self.DB_URL = self.database_url
+        self.DB_ECHO = self.db_echo
+        self.DB_POOL_SIZE = self.db_pool_size
+        self.DB_MAX_OVERFLOW = self.db_max_overflow
+        self.DB_POOL_TIMEOUT = self.db_pool_timeout
+        self.DB_POOL_RECYCLE = self.db_pool_recycle
+        self.DATA_RETENTION_DAYS = self.data_retention_days
         self.TEMPERATURE = self.temperature
 
 
