@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hand-Tracking Sign Language Recognizer</title>
+    <meta name="description" content="Real-time hand tracking and sign language recognition with live webcam detection and speech synthesis." />
+    <meta property="og:title" content="Hand-Tracking Sign Language Recognizer" />
+    <meta property="og:description" content="Real-time hand tracking and sign language recognition with live webcam detection and speech synthesis." />
+    <script>
+      // Gracefully handle browser/platform camera permission rejections
+      window.addEventListener('unhandledrejection', function(event) {
+        if (
+          event.reason &&
+          (event.reason.name === 'NotAllowedError' ||
+           event.reason.name === 'NotFoundError' ||
+           event.reason.name === 'SecurityError' ||
+           String(event.reason).includes('NotAllowedError') ||
+           String(event.reason).includes('not allowed by the user agent') ||
+           String(event.reason).includes('Failed to acquire camera feed'))
+        ) {
+          event.preventDefault();
+          console.warn("Handled browser camera permission restriction:", event.reason);
+        }
+      });
+    </script>
+    <!-- MediaPipe scripts for hand detection (bundled locally) -->
+    <script src="/mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="/mediapipe/hands/hands.js"></script>
+  </head>
+  <body class="bg-zinc-950 text-zinc-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
