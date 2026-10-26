@@ -47,6 +47,10 @@ class SentenceRequest(BaseModel):
     def _normalize(cls, v: Any) -> List[Any]:
         if v is None:
             return []
+        if isinstance(v, str):
+            raise ValueError("words must be a list, not a string")
+        if not isinstance(v, (list, tuple, set)):
+            raise ValueError("words must be a list")
         out = list(v)
         limit = getattr(settings, "max_words", None)
         # per-request max_words not available here; global check below

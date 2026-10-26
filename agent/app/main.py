@@ -148,11 +148,22 @@ async def preflight(rest_of_path: str, request: Request):
 # exception handlers
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    try:
+        errors = exc.errors()
+    except Exception:
+        errors = []
+    # ensure JSON-serializable
+    import json as _json
+
+    try:
+        errors = _json.loads(_json.dumps(errors, default=str))
+    except Exception:
+        errors = [str(e) for e in errors]
     return JSONResponse(
         status_code=422,
         content={
             "detail": "Validation error",
-            "errors": exc.errors(),
+            "errors": errors,
         },
     )
 

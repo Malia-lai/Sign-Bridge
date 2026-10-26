@@ -51,6 +51,14 @@ async def list_prompts(request: Request):
     return {"items": [t.model_dump() if hasattr(t, "model_dump") else t for t in items], "active": svc.active_name}
 
 
+@router.get("/prompts/export")
+async def export_prompts(request: Request):
+    svc = _service(request)
+    return {"items": svc.export()}
+
+
+
+
 @router.get("/prompts/{name}")
 async def get_prompt(name: str, request: Request, variant: Optional[str] = Query(default=None)):
     svc = _service(request)
@@ -93,12 +101,6 @@ async def activate_prompt(payload: PromptActivateRequest, request: Request):
         except Exception:
             pass
     return {"status": "ok", "active": svc.active_name}
-
-
-@router.get("/prompts/export")
-async def export_prompts(request: Request):
-    svc = _service(request)
-    return {"items": svc.export()}
 
 
 @router.post("/prompts/import")
