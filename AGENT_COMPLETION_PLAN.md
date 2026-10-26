@@ -139,10 +139,10 @@ add persistence/feedback, and ship it.
 
 ## Phase 10 — Docs, Docker, Ops & Integration (95–100)
 
-93. [ ] Write `agent/README.md` (setup, run, env vars).
-94. [ ] Write `docs/architecture.md`.
-95. [ ] Write `docs/api-contract.md` (endpoints, schemas, examples).
-96. [ ] Complete `docker-compose.yml` and `Dockerfile` (multi-stage + healthcheck).
+93. [x] Write `agent/README.md` (setup, run, env vars).
+94. [x] Write `docs/architecture.md`.
+95. [x] Write `docs/api-contract.md` (endpoints, schemas, examples).
+96. [x] Complete `docker-compose.yml` and `Dockerfile` (multi-stage + healthcheck).
 97. [ ] Add CI (GitHub Actions) for tests + lint.
 98. [ ] Add linting/formatting config (ruff/black).
 99. [ ] Integrate agent with frontend or document standalone usage + port.
