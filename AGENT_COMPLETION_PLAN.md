@@ -143,7 +143,7 @@ add persistence/feedback, and ship it.
 94. [x] Write `docs/architecture.md`.
 95. [x] Write `docs/api-contract.md` (endpoints, schemas, examples).
 96. [x] Complete `docker-compose.yml` and `Dockerfile` (multi-stage + healthcheck).
-97. [ ] Add CI (GitHub Actions) for tests + lint.
+97. [x] Add CI (GitHub Actions) for tests + lint.
 98. [ ] Add linting/formatting config (ruff/black).
 99. [ ] Integrate agent with frontend or document standalone usage + port.
 100. [ ] Release checklist: version bump, changelog, tag.
