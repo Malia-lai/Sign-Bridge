@@ -1,3 +1,6 @@
 .env
 evaluation/results/*.json
 __pycache__/
+# Generated DB artifacts
+*.db
+backup.json
