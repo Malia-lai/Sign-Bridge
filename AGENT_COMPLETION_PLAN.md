@@ -67,20 +67,20 @@ add persistence/feedback, and ship it.
 
 ## Phase 4 — API Layer (39–52)
 
-39. [ ] Implement `app/api/routes/feedback.py` (`POST /feedback`).
-40. [ ] Add `GET /feedback/stats`.
-41. [ ] Implement `app/api/websocket.py` (`/ws/sentence`).
-42. [ ] Define WebSocket message protocol (types + examples).
-43. [ ] Add friendly 422 validation error handlers.
-44. [ ] Add optional API-key authentication middleware.
-45. [ ] Add per-IP rate-limiting middleware.
-46. [ ] Add request/response logging middleware.
-47. [ ] Add OpenAPI tags and descriptions.
-48. [ ] Add `/v1` versioning prefix.
-49. [ ] Handle CORS preflight explicitly.
-50. [ ] Enrich health endpoint with provider/model info (see 11).
-51. [ ] Return safe error responses (no stack traces in prod).
-52. [ ] Customize Swagger UI (title, description, contact).
+39. [x] Implement `app/api/routes/feedback.py` (`POST /feedback`).
+40. [x] Add `GET /feedback/stats`.
+41. [x] Implement `app/api/websocket.py` (`/ws/sentence`).
+42. [x] Define WebSocket message protocol (types + examples).
+43. [x] Add friendly 422 validation error handlers.
+44. [x] Add optional API-key authentication middleware.
+45. [x] Add per-IP rate-limiting middleware.
+46. [x] Add request/response logging middleware.
+47. [x] Add OpenAPI tags and descriptions.
+48. [x] Add `/v1` versioning prefix.
+49. [x] Handle CORS preflight explicitly.
+50. [x] Enrich health endpoint with provider/model info (see 11).
+51. [x] Return safe error responses (no stack traces in prod).
+52. [x] Customize Swagger UI (title, description, contact).
 
 ## Phase 5 — Services & Business Logic (53–62)
 

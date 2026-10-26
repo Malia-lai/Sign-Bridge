@@ -2,11 +2,20 @@ import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.openapi.utils import get_openapi
 
 from app.api.dependencies import get_settings, validate_prompt_files
-from app.api.middleware import RequestIDMiddleware
-from app.api.routes import health, sentence
+from app.api.middleware import (
+    APIKeyMiddleware,
+    PerIPRateLimitMiddleware,
+    RequestIDMiddleware,
+    RequestResponseLoggingMiddleware,
+)
+from app.api.routes import feedback, health, sentence
+from app.api import websocket as ws_routes
 from app.core.agent import Agent
 from app.llm.client import LLMClient
 
@@ -18,14 +27,12 @@ def _parse_origins(value: str):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # startup validation (fail fast)
     validate_prompt_files()
     settings = get_settings()
     app.state.settings = settings
     app.state.llm_client = LLMClient()
     app.state.agent = Agent(mock_mode=settings.mock_mode, llm_client=app.state.llm_client)
     yield
-    # graceful shutdown
     client = getattr(app.state, "llm_client", None)
     if client is not None:
         for provider in (getattr(client, "provider", None), getattr(client, "fallback_provider", None)):
@@ -39,7 +46,6 @@ async def lifespan(app: FastAPI):
                         await result
                 except Exception:
                     pass
-    # DB connections (none yet, but hook reserved)
 
 
 settings = get_settings()
@@ -47,10 +53,32 @@ origins = _parse_origins(getattr(settings, "cors_origins", "*"))
 if not origins:
     origins = ["*"]
 
-app = FastAPI(title="Sign Bridge Agent", lifespan=lifespan)
+OPENAPI_TAGS = [
+    {"name": "health", "description": "Health and readiness endpoints"},
+    {"name": "sentence", "description": "Sentence generation"},
+    {"name": "feedback", "description": "Feedback collection"},
+    {"name": "websocket", "description": "WebSocket endpoints"},
+]
 
+app = FastAPI(
+    title="Sign Bridge Agent",
+    description="AI agent service that turns signed words into natural sentences.",
+    version="1.0.0",
+    contact={"name": "Sign-Bridge", "email": "support@sign-bridge.local"},
+    openapi_tags=OPENAPI_TAGS,
+    lifespan=lifespan,
+    swagger_ui_parameters={"defaultModelsExpandDepth": -1},
+)
+
+# middleware order
 app.add_middleware(RequestIDMiddleware)
-
+app.add_middleware(RequestResponseLoggingMiddleware)
+app.add_middleware(
+    PerIPRateLimitMiddleware,
+    limit=getattr(settings, "rate_limit_per_minute", 60),
+    window=60,
+)
+app.add_middleware(APIKeyMiddleware, api_key=getattr(settings, "api_key", ""))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -59,11 +87,57 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(health.router)
-app.include_router(sentence.router)
-app.include_router(health.router, prefix="/api")
-app.include_router(sentence.router, prefix="/api")
 
-# convenience aliases for tests/tooling
+@app.options("/{rest_of_path:path}")
+async def preflight(rest_of_path: str, request: Request):
+    # Explicit CORS preflight handling
+    return JSONResponse(status_code=200, content={"status": "ok"})
+
+
+# exception handlers
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": "Validation error",
+            "errors": exc.errors(),
+        },
+    )
+
+
+from fastapi import HTTPException as _HTTPException
+
+@app.exception_handler(_HTTPException)
+async def http_exception_handler(request: Request, exc: _HTTPException):
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    settings = get_settings()
+    if getattr(settings, "debug", False):
+        return JSONResponse(status_code=500, content={"detail": str(exc)})
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+
+# routers
+app.include_router(health.router, tags=["health"])
+app.include_router(sentence.router, tags=["sentence"])
+app.include_router(feedback.router, tags=["feedback"])
+app.include_router(ws_routes.router, tags=["websocket"])
+
+# /api prefix (backward compat)
+app.include_router(health.router, prefix="/api", tags=["health"])
+app.include_router(sentence.router, prefix="/api", tags=["sentence"])
+app.include_router(feedback.router, prefix="/api", tags=["feedback"])
+app.include_router(ws_routes.router, prefix="/api", tags=["websocket"])
+
+# /v1 versioning
+app.include_router(health.router, prefix="/v1", tags=["health"])
+app.include_router(sentence.router, prefix="/v1", tags=["sentence"])
+app.include_router(feedback.router, prefix="/v1", tags=["feedback"])
+app.include_router(ws_routes.router, prefix="/v1", tags=["websocket"])
+
+# convenience aliases
 validate_prompt_files = validate_prompt_files
 get_settings = get_settings

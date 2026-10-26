@@ -35,6 +35,9 @@ class Settings:
         self.gemini_api_key = _env("GEMINI_API_KEY", default="")
         self.gemini_model = _env("GEMINI_MODEL", default="")
         self.fallback_provider = _env("FALLBACK_PROVIDER", default="").lower()
+        self.api_key = _env("API_KEY", "AGENT_API_KEY", default="")
+        self.debug = _bool(_env("DEBUG", default="false"))
+        self.rate_limit_per_minute = int(_env("RATE_LIMIT_PER_MINUTE", "IP_RATE_LIMIT", default="60"))
         self.max_words = int(_env("MAX_WORDS", "MAX_WORD_COUNT", default="100"))
         self.buffer_size = int(_env("BUFFER_SIZE", "WORD_BUFFER_SIZE", default="10"))
         self.cache_size = int(_env("CACHE_SIZE", "SENTENCE_CACHE_SIZE", default="128"))
@@ -60,6 +63,9 @@ class Settings:
         self.GEMINI_API_KEY = self.gemini_api_key
         self.GEMINI_MODEL = self.gemini_model
         self.FALLBACK_PROVIDER = self.fallback_provider
+        self.API_KEY = self.api_key
+        self.DEBUG = self.debug
+        self.RATE_LIMIT_PER_MINUTE = self.rate_limit_per_minute
         self.LOG_LEVEL = self.log_level
         self.LOG_FORMAT = self.log_format
         self.CORS_ORIGINS = self.cors_origins
