@@ -5,8 +5,10 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 from app.config import settings
+from app.core.buffer import SlidingWindowBuffer
+from app.core.cache import SentenceCache
 from app.core.confidence import below_threshold as below_threshold_helper
-from app.core.confidence import detect_unknown, ensure_alternatives, vocabulary_words
+from app.core.confidence import aggregate_confidence, detect_unknown, ensure_alternatives, vocabulary_words
 from app.core.fallback import build_fallback, detect_emergency
 from app.llm.base_provider import classify_error
 from app.llm.client import LLMClient, _extract_json
@@ -41,13 +43,60 @@ class Agent:
         examples=None,
         llm_client=None,
         mock_mode=None,
+        buffer=None,
+        buffer_size=None,
+        cache=None,
+        cache_size=None,
+        enable_cache=True,
+        retries=None,
+        agent_retries=None,
+        max_retries=None,
+        timeout=None,
+        emergency_keywords=None,
+        fallback_to_mock=None,
+        system_prompt=None,
     ):
         self.vocabulary = vocabulary if vocabulary is not None else load_vocabulary()
         self.examples = examples if examples is not None else load_examples()
         self.mock_mode = settings.mock_mode if mock_mode is None else bool(mock_mode)
         self.llm_client = llm_client if llm_client is not None else (None if self.mock_mode else LLMClient())
-        self._system_template = load_system_prompt()
+        self._system_template = system_prompt if system_prompt is not None else load_system_prompt()
         self.last_raw_output = None
+
+        # buffer
+        if buffer is not None:
+            self.buffer = buffer
+        else:
+            size = buffer_size if buffer_size is not None else getattr(settings, "buffer_size", 10)
+            self.buffer = SlidingWindowBuffer(size=size)
+
+        # cache
+        self.enable_cache = bool(enable_cache)
+        if cache is not None:
+            self.cache = cache
+        elif self.enable_cache:
+            size = cache_size if cache_size is not None else getattr(settings, "cache_size", 128)
+            self.cache = SentenceCache(capacity=size)
+        else:
+            self.cache = None
+
+        # agent-level retries
+        if retries is not None:
+            self.retries = int(retries)
+        elif agent_retries is not None:
+            self.retries = int(agent_retries)
+        elif max_retries is not None:
+            self.retries = int(max_retries)
+        else:
+            self.retries = int(getattr(settings, "agent_retries", 2))
+
+        self.timeout = timeout  # None -> settings/request
+        self.emergency_keywords = emergency_keywords
+        self.fallback_to_mock = getattr(settings, "fallback_to_mock", True) if fallback_to_mock is None else bool(fallback_to_mock)
+
+        # simple stats
+        self.last_retry_count = 0
+        self.cache_hits = 0
 
     @property
     def vocab_words(self) -> List[str]:
@@ -124,108 +173,257 @@ class Agent:
                 req = SentenceRequest(words=list(request))
             else:
                 req = SentenceRequest(words=[])
-        words = req.normalized_words()
-        confidences = req.word_confidences()
-        alts = req.word_alternatives()
+        # buffer: dedupe immediate repeats at agent level
+        raw_words = req.normalized_words()
+        raw_confidences = req.word_confidences()
+        raw_alts = req.word_alternatives()
+        # pad confidences/alternatives to raw length
+        if len(raw_confidences) < len(raw_words):
+            raw_confidences = raw_confidences + [1.0] * (len(raw_words) - len(raw_confidences))
+        if len(raw_alts) < len(raw_words):
+            raw_alts = raw_alts + [[] for _ in range(len(raw_words) - len(raw_alts))]
+
+        # immediate dedup within the request
+        deduped_words = []
+        deduped_conf = []
+        deduped_alts = []
+        prev = None
+        for w, c, a in zip(raw_words, raw_confidences, raw_alts):
+            s = str(w).strip()
+            if not s:
+                continue
+            if s == prev:
+                continue
+            deduped_words.append(s)
+            deduped_conf.append(c)
+            deduped_alts.append(a)
+            prev = s
+
+        # buffer-level dedup: drop leading word if it repeats last buffered word
+        if self.buffer is not None and deduped_words and self.buffer.get() and deduped_words[0] == self.buffer.get()[-1]:
+            deduped_words = deduped_words[1:]
+            deduped_conf = deduped_conf[1:]
+            deduped_alts = deduped_alts[1:]
+
+        words = deduped_words
+        confidences = deduped_conf
+        alts = deduped_alts
         unknown = self._unknown(words)
         language = req.language or settings.output_language
         self.last_raw_output = None
+        timeout = req.timeout if getattr(req, "timeout", None) is not None else self.timeout
+        if timeout is None:
+            timeout = settings.timeout
+
+        # confidence aggregation across words
+        word_agg = aggregate_confidence(confidences) if confidences else 1.0
+
+        # cache lookup
+        cache_key = None
+        if self.cache is not None:
+            cache_key = self.cache.make_key(words, language)
+            cached_resp = self.cache.get(cache_key)
+            if cached_resp is not None:
+                try:
+                    resp_copy = SentenceResponse(**cached_resp.model_dump()) if hasattr(cached_resp, "model_dump") else SentenceResponse(**cached_resp)
+                except Exception:
+                    resp_copy = cached_resp
+                resp_copy.cached = True
+                self.cache_hits += 1
+                return resp_copy
+
         timings: dict = {}
         t_total = time.perf_counter()
 
         if not words:
             resp = build_fallback(words, unknown_words=unknown, confidence=0.1, fallback_reason="empty_input")
-            timings["total"] = time.perf_counter() - t_total
-            resp.timings = timings
-            resp.stage_timings = dict(timings)
-            resp.timing = dict(timings)
-            resp.durations = dict(timings)
-            resp.elapsed_ms = timings["total"] * 1000.0
-            resp.duration_ms = resp.elapsed_ms
+            self._finalize_timings(resp, timings, t_total)
+            self._maybe_cache(cache_key, resp)
+            if self.buffer is not None:
+                self.buffer.extend(words)
             return resp
 
-        if self.mock_mode:
-            t0 = time.perf_counter()
+        # agent-level retry loop
+        last_exc = None
+        strict = False
+        result_resp = None
+        for attempt in range(self.retries + 1):
+            self.last_retry_count = attempt
+            if self.mock_mode:
+                t0 = time.perf_counter()
+                resp = self._mock(words, unknown, confidences)
+                timings["mock"] = time.perf_counter() - t0
+                self.last_raw_output = resp.sentence
+                # combine confidence with word aggregation
+                resp.confidence = min(resp.confidence, word_agg) if confidences else resp.confidence
+                # emergency detection
+                if detect_emergency(words, self.vocabulary, emergency_keywords=self.emergency_keywords):
+                    if resp.intent != "emergency":
+                        resp.intent = "emergency"
+                        resp.intent_overridden = True
+                        resp.overridden = True
+                        resp.intent_was_overridden = True
+                        resp.emergency_override = True
+                    resp.emergency = True
+                    resp.emergency_fallback = True
+                    resp.is_emergency = True
+                    resp.emergency_flag = True
+                timings["total"] = time.perf_counter() - t_total
+                result_resp = resp
+                break
+
+            system = self._build_system_prompt(language)
+            user = self._build_user_prompt(words, confidences, alts, unknown)
+            if strict:
+                system = system + "\n\nIMPORTANT: Return ONLY valid JSON matching the required schema. No markdown, no extra text."
+                user = user + "\nReturn strictly valid JSON."
+            try:
+                t0 = time.perf_counter()
+                raw = await asyncio.wait_for(
+                    self.llm_client.generate(system, user), timeout=timeout
+                )
+                timings["llm"] = time.perf_counter() - t0
+                self.last_raw_output = raw
+                t1 = time.perf_counter()
+                parsed = _extract_json(raw)
+                validated = LLMOutput(**parsed)
+                timings["validation"] = time.perf_counter() - t1
+                resp = SentenceResponse(
+                    sentence=validated.sentence,
+                    intent=validated.intent,
+                    confidence=validated.confidence,
+                    alternatives=validated.alternatives,
+                    fallback=False,
+                    unknown_words=unknown,
+                    raw_words=list(words),
+                )
+                if detect_emergency(words, self.vocabulary, emergency_keywords=self.emergency_keywords):
+                    resp.intent = "emergency"
+                    resp.intent_overridden = True
+                    resp.overridden = True
+                    resp.intent_was_overridden = True
+                    resp.emergency_override = True
+                    resp.emergency = True
+                    resp.emergency_fallback = True
+                    resp.is_emergency = True
+                    resp.emergency_flag = True
+                # confidence aggregation
+                if confidences:
+                    resp.confidence = min(resp.confidence, word_agg)
+                if below_threshold_helper(resp.confidence):
+                    resp = ensure_alternatives(resp, raw_words=words)
+                timings["total"] = time.perf_counter() - t_total
+                result_resp = resp
+                break
+            except Exception as exc:
+                last_exc = exc
+                reason = classify_error(exc)
+                # invalid JSON -> retry with stricter prompting
+                if "json" in reason or "invalid" in reason or "expecting value" in str(exc).lower():
+                    strict = True
+                    if attempt < self.retries:
+                        continue
+                # other retryable? retry on any exception up to retries
+                if attempt < self.retries:
+                    continue
+                # exhausted
+                break
+
+        if result_resp is not None:
+            self._finalize_timings(result_resp, timings, t_total)
+            self._maybe_cache(cache_key, result_resp)
+            if self.buffer is not None:
+                self.buffer.extend(words)
+            return result_resp
+
+        # repeated provider failure -> fallback
+        reason = classify_error(last_exc) if last_exc is not None else "other"
+        # fall back to mock mode if configured
+        if self.fallback_to_mock and not self.mock_mode:
+            self.mock_mode = True
+            self.llm_client = None
+            emergency = detect_emergency(words, self.vocabulary, emergency_keywords=self.emergency_keywords)
             resp = self._mock(words, unknown, confidences)
-            timings["mock"] = time.perf_counter() - t0
             self.last_raw_output = resp.sentence
-            timings["total"] = time.perf_counter() - t_total
-            resp.timings = timings
-            resp.stage_timings = dict(timings)
-            resp.timing = dict(timings)
-            resp.durations = dict(timings)
-            resp.elapsed_ms = timings["total"] * 1000.0
-            resp.duration_ms = resp.elapsed_ms
-            return resp
-
-        system = self._build_system_prompt(language)
-        user = self._build_user_prompt(words, confidences, alts, unknown)
-        try:
-            t0 = time.perf_counter()
-            raw = await asyncio.wait_for(
-                self.llm_client.generate(system, user), timeout=settings.timeout
-            )
-            timings["llm"] = time.perf_counter() - t0
-            self.last_raw_output = raw
-            t1 = time.perf_counter()
-            parsed = _extract_json(raw)
-            validated = LLMOutput(**parsed)
-            timings["validation"] = time.perf_counter() - t1
-            resp = SentenceResponse(
-                sentence=validated.sentence,
-                intent=validated.intent,
-                confidence=validated.confidence,
-                alternatives=validated.alternatives,
-                fallback=False,
-                unknown_words=unknown,
-                raw_words=list(words),
-            )
-            if detect_emergency(words, self.vocabulary):
+            if emergency:
                 resp.intent = "emergency"
                 resp.intent_overridden = True
                 resp.overridden = True
                 resp.intent_was_overridden = True
                 resp.emergency_override = True
-            if below_threshold_helper(resp.confidence):
-                resp = ensure_alternatives(resp, raw_words=words)
+            resp.fallback = True
+            resp.fallback_reason = reason
+            resp.fallback_reasons = [reason] + (["emergency"] if emergency else [])
+            resp.emergency = emergency
+            resp.emergency_fallback = emergency
+            resp.is_emergency = emergency
+            resp.emergency_flag = emergency
+            if confidences:
+                resp.confidence = min(resp.confidence, word_agg)
+            timings["mock_fallback"] = time.perf_counter() - t_total
             timings["total"] = time.perf_counter() - t_total
-            resp.timings = timings
+            self._finalize_timings(resp, timings, t_total)
+            self._maybe_cache(cache_key, resp)
+            if self.buffer is not None:
+                self.buffer.extend(words)
+            return resp
+
+        if detect_emergency(words, self.vocabulary, emergency_keywords=self.emergency_keywords):
+            resp = build_fallback(
+                words,
+                unknown_words=unknown,
+                confidence=1.0,
+                intent="emergency",
+                fallback=True,
+                fallback_reason=reason,
+                emergency=True,
+                fallback_reasons=[reason, "emergency"],
+            )
+        else:
+            resp = build_fallback(
+                words,
+                unknown_words=unknown,
+                confidence=0.1,
+                fallback_reason=reason,
+                fallback_reasons=[reason],
+            )
+        if confidences:
+            try:
+                resp.confidence = min(resp.confidence, word_agg)
+            except Exception:
+                pass
+        timings["total"] = time.perf_counter() - t_total
+        self._finalize_timings(resp, timings, t_total)
+        self._maybe_cache(cache_key, resp)
+        if self.buffer is not None:
+            self.buffer.extend(words)
+        return resp
+
+    def _finalize_timings(self, resp, timings, t_total):
+        if "total" not in timings:
+            timings["total"] = time.perf_counter() - t_total
+        try:
+            resp.timings = dict(timings)
             resp.stage_timings = dict(timings)
             resp.timing = dict(timings)
             resp.durations = dict(timings)
             resp.elapsed_ms = timings["total"] * 1000.0
             resp.duration_ms = resp.elapsed_ms
-            return resp
-        except Exception as exc:
-            reason = classify_error(exc)
-            timings["error"] = reason
-            timings["total"] = time.perf_counter() - t_total
-            if detect_emergency(words, self.vocabulary):
-                resp = build_fallback(
-                    words,
-                    unknown_words=unknown,
-                    confidence=1.0,
-                    intent="emergency",
-                    fallback=True,
-                    fallback_reason=reason,
-                    emergency=True,
-                    fallback_reasons=[reason, "emergency"],
-                )
-            else:
-                resp = build_fallback(
-                    words,
-                    unknown_words=unknown,
-                    confidence=0.1,
-                    fallback_reason=reason,
-                    fallback_reasons=[reason],
-                )
-            resp.timings = timings
-            resp.stage_timings = dict(timings)
-            resp.timing = dict(timings)
-            resp.durations = dict(timings)
-            resp.elapsed_ms = timings["total"] * 1000.0
-            resp.duration_ms = resp.elapsed_ms
-            return resp
+        except Exception:
+            pass
+
+    def _maybe_cache(self, cache_key, resp):
+        if self.cache is not None and cache_key is not None:
+            try:
+                # store a copy
+                copy_resp = SentenceResponse(**resp.model_dump())
+                copy_resp.cached = False
+                self.cache.set(cache_key, copy_resp)
+            except Exception:
+                try:
+                    self.cache.set(cache_key, resp)
+                except Exception:
+                    pass
 
     async def process_words(self, words, **kwargs):
         return await self.process(SentenceRequest(words=list(words)))

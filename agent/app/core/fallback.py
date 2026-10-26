@@ -1,10 +1,51 @@
-from typing import Any, List, Optional
+from typing import Any, Iterable, List, Optional, Union
 
+from app.config import settings
 from app.schemas.response import SentenceResponse
 from app.core.confidence import clamp_confidence
 
 
-def detect_emergency(words: List[str], vocabulary: Any) -> bool:
+def _extra_emergency_keywords(extra: Any = None) -> set:
+    words = set()
+    # settings
+    raw = getattr(settings, "emergency_keywords", "") or ""
+    for part in str(raw).split(","):
+        part = part.strip().lower()
+        if part:
+            words.add(part)
+    # extra arg
+    if extra is None:
+        return words
+    if isinstance(extra, str):
+        for part in extra.split(","):
+            part = part.strip().lower()
+            if part:
+                words.add(part)
+    elif isinstance(extra, (list, tuple, set)):
+        for item in extra:
+            if isinstance(item, str):
+                for part in item.split(","):
+                    part = part.strip().lower()
+                    if part:
+                        words.add(part)
+            else:
+                words.add(str(item).lower())
+    return words
+
+
+def detect_emergency(
+    words: List[str],
+    vocabulary: Any = None,
+    emergency_keywords: Any = None,
+    keywords: Any = None,
+    extra: Any = None,
+    **kwargs: Any,
+) -> bool:
+    # accept various kw names
+    if emergency_keywords is None:
+        emergency_keywords = kwargs.get("emergency_keywords", kwargs.get("keywords", keywords))
+    if emergency_keywords is None:
+        emergency_keywords = extra
     emergency_words = set()
     if isinstance(vocabulary, dict):
         if "words" in vocabulary and isinstance(vocabulary["words"], (list, tuple, set)):
@@ -28,6 +69,7 @@ def detect_emergency(words: List[str], vocabulary: Any) -> bool:
                 tags = item.get("tags") or []
                 if w and "emergency" in [str(t).lower() for t in tags]:
                     emergency_words.add(str(w).lower())
+    emergency_words = emergency_words | _extra_emergency_keywords(emergency_keywords)
     return any(str(w).lower() in emergency_words for w in (words or []))
 
 

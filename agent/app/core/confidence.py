@@ -28,6 +28,22 @@ def _as_response(obj: Any) -> SentenceResponse:
     raise TypeError("expected SentenceResponse or dict")
 
 
+def _distinct_alternatives(candidates: List[str], max_count: int) -> List[str]:
+    out: List[str] = []
+    seen = set()
+    for c in candidates:
+        c = (c or "").strip()
+        if not c:
+            continue
+        if c in seen:
+            continue
+        seen.add(c)
+        out.append(c)
+        if len(out) >= max_count:
+            break
+    return out
+
+
 def ensure_alternatives(
     obj: Any,
     threshold: Optional[float] = None,
@@ -35,7 +51,7 @@ def ensure_alternatives(
     min_count: int = 2,
     max_count: int = 3,
 ) -> Any:
-    """Ensure 2-3 alternatives when confidence is below threshold."""
+    """Ensure 2-3 distinct, meaningful alternatives when confidence is below threshold."""
     thr = get_threshold(threshold)
     if isinstance(obj, dict):
         resp = _as_response(obj)
@@ -44,33 +60,78 @@ def ensure_alternatives(
         resp = _as_response(obj)
         was_dict = False
 
+    words = list(raw_words or resp.raw_words or [])
+    fallback_sentence = " ".join(w for w in words if str(w).strip()).strip()
+    if fallback_sentence and fallback_sentence != resp.sentence:
+        # capitalize nicely
+        fallback_sentence = fallback_sentence[0].upper() + fallback_sentence[1:] if fallback_sentence else fallback_sentence
+
     if below_threshold(resp.confidence, thr):
-        alts = list(resp.alternatives or [])
-        # pad with a raw-words fallback if needed
-        fallback_sentence = " ".join(raw_words or resp.raw_words or []).strip()
-        candidates = [a for a in alts if a]
-        if fallback_sentence and fallback_sentence not in candidates:
+        candidates: List[str] = []
+        # LLM-provided alternatives first
+        for a in (resp.alternatives or []):
+            candidates.append(str(a))
+        # the generated sentence itself is a meaningful option
+        if resp.sentence:
+            candidates.append(resp.sentence)
+        # a direct words-as-sentence fallback
+        if fallback_sentence:
             candidates.append(fallback_sentence)
-        # ensure at least min_count by reusing available distinct strings
-        i = 0
-        pool = [fallback_sentence] if fallback_sentence else ([" ".join(resp.raw_words)] if resp.raw_words else [])
-        if not pool and resp.sentence:
-            pool = [resp.sentence]
-        while len(candidates) < min_count and pool:
-            cand = pool[i % len(pool)]
-            if cand:
-                candidates.append(cand)
+        # meaningful variants: question/statement phrasings if not already present
+        if words:
+            variant = " ".join(words).strip()
+            if variant and variant != fallback_sentence:
+                candidates.append(variant[0].upper() + variant[1:] if variant else variant)
+        # pad with distinct, non-empty placeholders only if truly needed
+        i = 1
+        base = resp.sentence or fallback_sentence or " ".join(words)
+        while len(_distinct_alternatives(candidates, max_count)) < min_count and base:
+            cand = f"{base}".strip()
+            if i > 1:
+                cand = f"{base} ({i})"
+            candidates.append(cand)
             i += 1
             if i > 10:
                 break
-        # trim to max_count
-        candidates = candidates[:max_count]
+
+        candidates = _distinct_alternatives(candidates, max_count)
         resp.alternatives = candidates
     else:
-        # still cap
-        resp.alternatives = list(resp.alternatives or [])[:max_count]
+        # still dedupe + cap
+        resp.alternatives = _distinct_alternatives(list(resp.alternatives or []), max_count)
 
     return resp.model_dump() if was_dict else resp
+
+
+def aggregate_confidence(confidences: Any, method: str = "mean") -> float:
+    vals = []
+    for c in (confidences or []):
+        vals.append(clamp_confidence(c))
+    if not vals:
+        return 1.0
+    method = (method or "mean").lower()
+    if method in {"min", "minimum"}:
+        return min(vals)
+    if method in {"max", "maximum"}:
+        return max(vals)
+    if method in {"product", "prod"}:
+        result = 1.0
+        for v in vals:
+            result *= v
+        return clamp_confidence(result)
+    # default mean
+    return clamp_confidence(sum(vals) / len(vals))
+
+
+# aliases
+aggregate_word_confidence = aggregate_confidence
+aggregate_word_confidences = aggregate_confidence
+aggregate_confidences = aggregate_confidence
+aggregate = aggregate_confidence
+combine_confidences = aggregate_confidence
+mean_confidence = lambda c: aggregate_confidence(c, "mean")
+min_confidence = lambda c: aggregate_confidence(c, "min")
+max_confidence = lambda c: aggregate_confidence(c, "max")
 
 
 def detect_unknown(words: List[str], vocabulary: Any) -> List[str]:

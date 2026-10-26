@@ -35,18 +35,18 @@ add persistence/feedback, and ship it.
 
 ## Phase 2 — Core Agent Enhancements (13–24)
 
-13. [ ] Implement `app/core/buffer.py` (sliding window of recent words).
-14. [ ] Integrate buffer into `Agent.process` to dedupe immediate repeats at agent level.
-15. [ ] Add language validation in `SentenceRequest`.
-16. [ ] Add max-words limit and validation.
-17. [ ] Add confidence aggregation across words.
-18. [ ] Add LRU sentence cache for identical word lists.
-19. [ ] Add agent-level retry with configurable retries.
-20. [ ] Support per-request timeout override.
-21. [ ] Retry on invalid JSON output with stricter prompting.
-22. [ ] Fall back to mock mode after repeated provider failure.
-23. [ ] Add configurable emergency keyword list (beyond vocabulary tags).
-24. [ ] Improve alternatives (distinct, meaningful, capped).
+13. [x] Implement `app/core/buffer.py` (sliding window of recent words).
+14. [x] Integrate buffer into `Agent.process` to dedupe immediate repeats at agent level.
+15. [x] Add language validation in `SentenceRequest`.
+16. [x] Add max-words limit and validation.
+17. [x] Add confidence aggregation across words.
+18. [x] Add LRU sentence cache for identical word lists.
+19. [x] Add agent-level retry with configurable retries.
+20. [x] Support per-request timeout override.
+21. [x] Retry on invalid JSON output with stricter prompting.
+22. [x] Fall back to mock mode after repeated provider failure.
+23. [x] Add configurable emergency keyword list (beyond vocabulary tags).
+24. [x] Improve alternatives (distinct, meaningful, capped).
 
 ## Phase 3 — LLM Providers & Rate Limiting (25–38)
 

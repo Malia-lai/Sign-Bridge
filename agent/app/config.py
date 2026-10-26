@@ -35,6 +35,13 @@ class Settings:
         self.gemini_api_key = _env("GEMINI_API_KEY", default="")
         self.gemini_model = _env("GEMINI_MODEL", default="")
         self.fallback_provider = _env("FALLBACK_PROVIDER", default="").lower()
+        self.max_words = int(_env("MAX_WORDS", "MAX_WORD_COUNT", default="100"))
+        self.buffer_size = int(_env("BUFFER_SIZE", "WORD_BUFFER_SIZE", default="10"))
+        self.cache_size = int(_env("CACHE_SIZE", "SENTENCE_CACHE_SIZE", default="128"))
+        self.agent_retries = int(_env("AGENT_RETRIES", "AGENT_MAX_RETRIES", default="2"))
+        self.fallback_to_mock = _bool(_env("FALLBACK_TO_MOCK", default="true"))
+        self.emergency_keywords = _env("EMERGENCY_KEYWORDS", default="help,pain,danger,emergency,urgent,sos")
+        self.supported_languages = _env("SUPPORTED_LANGUAGES", default="")
         self.log_level = _env("LOG_LEVEL", default="INFO").upper()
         self.log_format = _env("LOG_FORMAT", default="console").lower()
         self.cors_origins = _env("CORS_ORIGINS", "ALLOWED_ORIGINS", "CORS_ALLOWED_ORIGINS", default="*")
@@ -57,6 +64,13 @@ class Settings:
         self.LOG_FORMAT = self.log_format
         self.CORS_ORIGINS = self.cors_origins
         self.ALLOWED_ORIGINS = self.cors_origins
+        self.MAX_WORDS = self.max_words
+        self.BUFFER_SIZE = self.buffer_size
+        self.CACHE_SIZE = self.cache_size
+        self.AGENT_RETRIES = self.agent_retries
+        self.FALLBACK_TO_MOCK = self.fallback_to_mock
+        self.EMERGENCY_KEYWORDS = self.emergency_keywords
+        self.SUPPORTED_LANGUAGES = self.supported_languages
         self.TEMPERATURE = self.temperature
 
 

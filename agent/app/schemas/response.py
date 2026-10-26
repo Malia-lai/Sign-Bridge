@@ -35,6 +35,7 @@ class SentenceResponse(BaseModel):
     emergency_override: bool = False
     unknown_words: List[str] = Field(default_factory=list)
     raw_words: List[str] = Field(default_factory=list)
+    cached: bool = False
     timings: Dict[str, Any] = Field(default_factory=dict)
     stage_timings: Dict[str, Any] = Field(default_factory=dict)
     timing: Dict[str, Any] = Field(default_factory=dict)
